@@ -1,0 +1,13 @@
+flask
+ultralytics
+chromadb
+pymupdf
+langchain-community
+langchain-chroma
+langchain-huggingface
+langchain-text-splitters
+sentence-transformers
+werkzeug
+gunicorn
+torch
+torchvision

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroEdge-X — MRO Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #080e1a;
+            --surface: #0d1a2e;
+            --surface2: #0f2040;
+            --border: #1a3a5c;
+            --accent: #00b4d8;
+            --accent2: #0077b6;
+            --text: #e0eaf8;
+            --muted: #4a6a8a;
+            --success: #00c896;
+            --danger: #ff4757;
+            --warning: #ffa502;
+            --font: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 2px;
+        }
+
+        .logo span {
+            color: #90e0ef;
+        }
+
+        .hbar {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+        }
+
+        .hmeta {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .hmeta span {
+            color: var(--text);
+        }
+
+        .hright {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .offline-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+        }
+
+        .offline-label {
+            font-size: 11px;
+            color: var(--success);
+            letter-spacing: 1px;
+        }
+
+        .hbattery {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex;
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            padding: 10px 20px;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .panel {
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .panel-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent2);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-left: 10px;
+        }
+
+        .panel-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-left: 6px;
+        }
+
+        .panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .panel-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .panel-body::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .upload-zone {
+            border: 1.5px dashed var(--border);
+            border-radius: 10px;
+            padding: 32px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            margin-bottom: 14px;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag {
+            border-color: var(--accent);
+            background: rgba(0, 180, 216, 0.04);
+        }
+
+        .upload-zone input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        .upload-text {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .upload-text strong {
+            color: var(--accent);
+        }
+
+        #preview-wrap {
+            position: relative;
+            display: none;
+            margin-bottom: 14px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        #preview-img {
+            width: 100%;
+            display: block;
+        }
+
+        #bbox-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #analyze-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+            letter-spacing: 0.5px;
+            transition: opacity 0.2s;
+        }
+
+        #analyze-btn:hover {
+            opacity: 0.9;
+        }
+
+        #analyze-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: none;
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 16px auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-lbl {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .det-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .det-left .det-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            text-transform: capitalize;
+        }
+
+        .det-left .det-conf {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .conf-bar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 4px;
+            width: 80px;
+        }
+
+        .conf-fill {
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-high {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .badge-medium {
+            background: rgba(255, 165, 2, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(255, 165, 2, 0.3);
+        }
+
+        .badge-low {
+            background: rgba(0, 200, 150, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(0, 200, 150, 0.3);
+        }
+
+        .rag-source-bar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .rag-source-name {
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        .rag-page {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .rag-results-badge {
+            font-size: 10px;
+            background: var(--surface2);
+            color: var(--muted);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .chunk-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent2);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+
+        .chunk-ref {
+            font-size: 10px;
+            color: var(--accent);
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .chunk-text {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .vector-bar {
+            margin-top: 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 11px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vector-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .step-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent2);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .step-content .step-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .step-content .step-desc {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .sync-btn {
+            width: 100%;
+            margin-top: 14px;
+            padding: 12px;
+            background: var(--success);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            display: none;
+            transition: opacity 0.2s;
+        }
+
+        .sync-btn:hover {
+            opacity: 0.9;
+        }
+
+        .pipeline {
+            display: flex;
+            align-items: center;
+        }
+
+        .pipe-step {
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            transition: all 0.3s;
+        }
+
+        .pipe-step.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0, 180, 216, 0.08);
+        }
+
+        .pipe-step.done {
+            border-color: var(--success);
+            color: var(--success);
+            background: rgba(0, 200, 150, 0.08);
+        }
+
+        .pipe-arrow {
+            color: var(--border);
+            font-size: 12px;
+            margin: 0 4px;
+        }
+
+        .det-details-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-top: 12px;
+        }
+
+        .det-detail-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+
+        .det-detail-icon {
+            color: var(--accent);
+            width: 14px;
+        }
+
+        .det-detail-label {
+            color: var(--muted);
+        }
+
+        .det-detail-val {
+            color: var(--text);
+            margin-left: auto;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .empty-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: var(--border);
+        }
+
+        .statusbar {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 6px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+
+        .sb-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sb-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <span class="logo">Aero<span>Edge</span>-X</span>
+        <div class="hbar"></div>
+        <span class="hmeta">Aircraft: <span>N123AX</span></span>
+        <div class="hbar"></div>
+        <span class="hmeta">User: <span>Technician 07</span></span>
+        <div class="hright">
+            <div class="pipeline">
+                <div class="pipe-step" id="ps-vision">Vision</div>
+                <span class="pipe-arrow">›</span>
+                <div class="pipe-step" id="ps-orch">Orchestration</div>
+                <span class="pipe-arrow">›</span>
+                <div class="pipe-step" id="ps-rag">Retrieval</div>
+                <span class="pipe-arrow">›</span>
+                <div class="pipe-step" id="ps-twin">Digital Twin</div>
+            </div>
+            <div class="hbar"></div>
+            <div class="offline-dot"></div>
+            <span class="offline-label">OFFLINE</span>
+            <div class="hbar"></div>
+            <span class="hbattery">⬡ 100%</span>
+        </div>
+    </header>
+
+    <nav>
+        <div class="nav-item active">⬡ Inspection</div>
+        <div class="nav-item">⬡ Manuals</div>
+        <div class="nav-item">⬡ Tools</div>
+        <div class="nav-item">⬡ Digital Twin</div>
+        <div class="nav-item">⬡ Logs</div>
+        <div class="nav-item">⬡ Settings</div>
+    </nav>
+
+    <div class="main">
+
+        <!-- PANEL 1 -->
+        <div class="panel">
+            <div class="panel-header">
+                <div style="display:flex;align-items:center;">
+                    <div class="panel-num">1</div>
+                    <span class="panel-title">Defect Detection</span>
+                    <span class="panel-sub">(YOLOv11)</span>
+                </div>
+                <span id="vision-status" style="font-size:11px;color:var(--muted);">Ready</span>
+            </div>
+            <div class="panel-body">
+                <div class="upload-zone" id="upload-zone">
+                    <input type="file" id="file-input" accept=".jpg,.jpeg,.png">
+                    <div class="upload-icon">✈</div>
+                    <div class="upload-text"><strong>Drop aircraft image</strong><br>JPG / PNG · click to browse</div>
+                </div>
+                <div id="preview-wrap">
+                    <img id="preview-img" src="" alt="preview">
+                    <canvas id="bbox-canvas"></canvas>
+                </div>
+                <button id="analyze-btn" onclick="analyze()">⬡ RUN DEFECT ANALYSIS</button>
+                <div class="spinner" id="spinner"></div>
+                <div id="vision-results" style="display:none;">
+                    <div class="stat-row">
+                        <div class="stat-card">
+                            <div class="stat-val" id="s-count">0</div>
+                            <div class="stat-lbl">Defects</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-val" id="s-defect" style="font-size:14px;">—</div>
+                            <div class="stat-lbl">Primary</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-val" id="s-sev" style="font-size:14px;">—</div>
+                            <div class="stat-lbl">Severity</div>
+                        </div>
+                    </div>
+                    <div class="section-label">Detected defects</div>
+                    <div id="det-list"></div>
+                    <div class="det-details-box" id="det-details" style="display:none;">
+                        <div class="det-detail-row"><span class="det-detail-icon">◈</span><span
+                                class="det-detail-label">Defect type</span><span class="det-detail-val"
+                                id="dd-type">—</span></div>
+                        <div class="det-detail-row"><span class="det-detail-icon">◈</span><span
+                                class="det-detail-label">Coordinates</span><span class="det-detail-val"
+                                id="dd-coords">—</span></div>
+                        <div class="det-detail-row"><span class="det-detail-icon">◈</span><span
+                                class="det-detail-label">Timestamp</span><span class="det-detail-val"
+                                id="dd-time">—</span></div>
+                        <div class="det-detail-row"><span class="det-detail-icon">◈</span><span
+                                class="det-detail-label">Inspection ID</span><span class="det-detail-val"
+                                id="dd-id">—</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL 2 -->
+        <div class="panel">
+            <div class="panel-header">
+                <div style="display:flex;align-items:center;">
+                    <div class="panel-num">2</div>
+                    <span class="panel-title">Grounded RAG Context</span>
+                </div>
+                <span style="font-size:11px;color:var(--muted);">ChromaDB · offline</span>
+            </div>
+            <div class="panel-body">
+                <div id="rag-empty" class="empty">
+                    <div class="empty-icon">⬡</div>Upload an image and run analysis to retrieve maintenance procedures
+                </div>
+                <div id="rag-results" style="display:none;">
+                    <div class="rag-source-bar">
+                        <div>
+                            <div class="rag-source-name" id="rag-src">—</div>
+                            <div class="rag-page" id="rag-pg">Page —</div>
+                        </div>
+                        <div class="rag-results-badge" id="rag-badge">Top 3 results</div>
+                    </div>
+                    <div class="section-label">Retrieved chunks</div>
+                    <div id="chunk-list"></div>
+                    <div class="vector-bar">
+                        <div class="vector-dot"></div>Vector source: ChromaDB · Embedding: all-MiniLM-L6-v2
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL 3 -->
+        <div class="panel">
+            <div class="panel-header">
+                <div style="display:flex;align-items:center;">
+                    <div class="panel-num">3</div>
+                    <span class="panel-title">AI Agent Repair Instructions</span>
+                </div>
+                <span style="font-size:11px;color:var(--muted);">RAG-grounded</span>
+            </div>
+            <div class="panel-body">
+                <div id="repair-empty" class="empty">
+                    <div class="empty-icon">⬡</div>Repair steps will appear after defect analysis
+                </div>
+                <div id="repair-results" style="display:none;">
+                    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Retrieved from maintenance manual
+                        · grounded generation only</div>
+                    <div class="section-label">Repair procedure</div>
+                    <div id="steps-list"></div>
+                    <button class="sync-btn" id="sync-btn" onclick="syncTwin()">⬡ Sync to Local Digital Twin</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="statusbar">
+        <div class="sb-item">
+            <div class="sb-dot" style="background:var(--success);"></div>YOLOv11n loaded
+        </div>
+        <div class="sb-item">
+            <div class="sb-dot" style="background:var(--success);"></div>ChromaDB ready
+        </div>
+        <div class="sb-item">
+            <div class="sb-dot" style="background:var(--success);"></div>SQLite connected
+        </div>
+        <div class="sb-item" style="margin-left:auto;"><span id="inspection-counter">Inspection #0</span></div>
+        <div class="sb-item">Edge device: RTX 4050</div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const previewImg = document.getElementById('preview-img');
+        const previewWrap = document.getElementById('preview-wrap');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const canvas = document.getElementById('bbox-canvas');
+        const ctx = canvas.getContext('2d');
+        let currentFile = null;
+        let lastDetections = [];
+
+        const COLORS = { crack: '#ff4757', dent: '#ffa502', 'missing-head': '#a29bfe', 'paint-off': '#00cec9', scratch: '#fdcb6e', defect: '#636e72' };
+
+        fileInput.addEventListener('change', e => {
+            const f = e.target.files[0]; if (!f) return;
+            currentFile = f;
+            const r = new FileReader();
+            r.onload = e => {
+                previewImg.onload = () => {
+                    canvas.width = previewImg.offsetWidth;
+                    canvas.height = previewImg.offsetHeight;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                };
+                previewImg.src = e.target.result;
+                previewWrap.style.display = 'block';
+                analyzeBtn.style.display = 'block';
+                document.getElementById('vision-results').style.display = 'none';
+                document.getElementById('rag-results').style.display = 'none';
+                document.getElementById('repair-results').style.display = 'none';
+                document.getElementById('rag-empty').style.display = 'block';
+                document.getElementById('repair-empty').style.display = 'block';
+                document.getElementById('det-details').style.display = 'none';
+                lastDetections = [];
+                resetPipeline();
+            };
+            r.readAsDataURL(f);
+        });
+
+        const uploadZone = document.getElementById('upload-zone');
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault(); uploadZone.classList.remove('drag');
+            const f = e.dataTransfer.files[0];
+            if (f) { fileInput.files = e.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); }
+        });
+
+        function resetPipeline() {
+            ['ps-vision', 'ps-orch', 'ps-rag', 'ps-twin'].forEach(id => {
+                document.getElementById(id).className = 'pipe-step';
+            });
+        }
+        function setStep(id, state) { document.getElementById(id).className = 'pipe-step ' + state; }
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function analyze() {
+            if (!currentFile) return;
+            analyzeBtn.disabled = true;
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('vision-results').style.display = 'none';
+            document.getElementById('rag-results').style.display = 'none';
+            document.getElementById('repair-results').style.display = 'none';
+            document.getElementById('rag-empty').style.display = 'block';
+            document.getElementById('repair-empty').style.display = 'block';
+            document.getElementById('vision-status').textContent = 'Running...';
+            resetPipeline();
+
+            const fd = new FormData();
+            fd.append('image', currentFile);
+
+            try {
+                setStep('ps-vision', 'active');
+                const res = await fetch('/analyze', { method: 'POST', body: fd });
+                const data = await res.json();
+                setStep('ps-vision', 'done');
+
+                setStep('ps-orch', 'active');
+                await sleep(300);
+                setStep('ps-orch', 'done');
+
+                setStep('ps-rag', 'active');
+                await sleep(400);
+                setStep('ps-rag', 'done');
+
+                setStep('ps-twin', 'active');
+                await sleep(200);
+                setStep('ps-twin', 'done');
+
+                renderVision(data);
+                renderRAG(data);
+                renderRepair(data);
+
+                document.getElementById('vision-status').textContent = 'Complete';
+                document.getElementById('inspection-counter').textContent = 'Inspection #' + data.inspection_id;
+
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('vision-status').textContent = 'Error';
+            } finally {
+                analyzeBtn.disabled = false;
+                document.getElementById('spinner').style.display = 'none';
+            }
+        }
+
+        function renderVision(data) {
+            const v = data.vision;
+            lastDetections = v.detections;
+            document.getElementById('vision-results').style.display = 'block';
+            document.getElementById('s-count').textContent = v.total_detections;
+            document.getElementById('s-defect').textContent = (v.primary_defect || 'none').toUpperCase();
+            const topSev = v.detections[0]?.severity || '—';
+            const sevEl = document.getElementById('s-sev');
+            sevEl.textContent = topSev.toUpperCase();
+            sevEl.style.color = topSev === 'high' ? 'var(--danger)' : topSev === 'medium' ? 'var(--warning)' : 'var(--success)';
+
+            document.getElementById('det-list').innerHTML = v.detections.map(d => `
+        <div class="det-item">
+            <div class="det-left">
+                <div class="det-name">${d.defect_type}</div>
+                <div class="det-conf">${(d.confidence * 100).toFixed(1)}% confidence</div>
+                <div class="conf-bar"><div class="conf-fill" style="width:${d.confidence * 100}%;background:${COLORS[d.defect_type] || 'var(--accent)'};"></div></div>
+            </div>
+            <div class="badge badge-${d.severity}">${d.severity.toUpperCase()}</div>
+        </div>`).join('');
+
+            if (v.detections.length > 0) {
+                const top = v.detections[0];
+                document.getElementById('det-details').style.display = 'block';
+                document.getElementById('dd-type').textContent = 'Surface ' + top.defect_type;
+                document.getElementById('dd-coords').textContent = `X: ${top.location.x_center.toFixed(3)}, Y: ${top.location.y_center.toFixed(3)}`;
+                document.getElementById('dd-time').textContent = new Date(v.timestamp).toLocaleString();
+                document.getElementById('dd-id').textContent = '#' + data.inspection_id;
+            }
+
+            // ── KEY FIX: wait for image to be fully rendered before drawing boxes ──
+            drawBoxes(v.detections);
+        }
+
+        function drawBoxes(detections) {
+            const img = previewImg;
+
+            const doDraw = () => {
+                canvas.width = img.offsetWidth;
+                canvas.height = img.offsetHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                detections.forEach(d => {
+                    const color = COLORS[d.defect_type] || '#00b4d8';
+                    const x = (d.location.x_center - d.location.width / 2) * canvas.width;
+                    const y = (d.location.y_center - d.location.height / 2) * canvas.height;
+                    const w = d.location.width * canvas.width;
+                    const h = d.location.height * canvas.height;
+
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, w, h);
+
+                    const label = `${d.defect_type} ${(d.confidence * 100).toFixed(0)}%`;
+                    ctx.font = 'bold 11px Segoe UI';
+                    const tw = ctx.measureText(label).width;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y - 18, tw + 10, 18);
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(label, x + 5, y - 5);
+                });
+            };
+
+            // If image already loaded and has dimensions → draw immediately
+            if (img.complete && img.naturalWidth !== 0 && img.offsetWidth !== 0) {
+                doDraw();
+            } else {
+                // Otherwise wait for load
+                img.onload = doDraw;
+            }
+        }
+
+        function renderRAG(data) {
+            const r = data.rag;
+            document.getElementById('rag-empty').style.display = 'none';
+            document.getElementById('rag-results').style.display = 'block';
+            document.getElementById('rag-src').textContent = r.source.split('\\').pop().split('/').pop();
+            document.getElementById('rag-pg').textContent = 'Page ' + r.page;
+            document.getElementById('rag-badge').textContent = r.chunks.length + ' sources';
+            document.getElementById('chunk-list').innerHTML = r.chunks.map(c => `
+        <div class="chunk-card">
+            <div class="chunk-ref">${c.source.split('\\').pop().split('/').pop()} · Page ${c.page}</div>
+            <div class="chunk-text">${c.text.substring(0, 280).replace(/\n/g, ' ')}${c.text.length > 280 ? '...' : ''}</div>
+        </div>`).join('');
+        }
+
+        function renderRepair(data) {
+            const r = data.rag;
+            document.getElementById('repair-empty').style.display = 'none';
+            document.getElementById('repair-results').style.display = 'block';
+            const sentences = r.procedure.replace(/\n/g, ' ').split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20);
+            const titles = ['Prepare work area', 'Inspect and assess', 'Apply corrective action', 'Verify repair', 'Final inspection'];
+            document.getElementById('steps-list').innerHTML = sentences.slice(0, 5).map((s, i) => `
+        <div class="step-card">
+            <div class="step-num">${i + 1}</div>
+            <div class="step-content">
+                <div class="step-title">${titles[i] || 'Step ' + (i + 1)}</div>
+                <div class="step-desc">${s}</div>
+            </div>
+        </div>`).join('');
+            document.getElementById('sync-btn').style.display = 'block';
+        }
+
+        function syncTwin() {
+            document.getElementById('sync-btn').textContent = '⬡ Synced to Digital Twin ✓';
+            document.getElementById('sync-btn').style.background = 'var(--accent2)';
+            document.getElementById('sync-btn').style.color = '#fff';
+        }
+
+        // Redraw boxes on window resize
+        window.addEventListener('resize', () => {
+            if (lastDetections.length > 0) drawBoxes(lastDetections);
+        });
+    </script>
+</body>
+
+</html>
