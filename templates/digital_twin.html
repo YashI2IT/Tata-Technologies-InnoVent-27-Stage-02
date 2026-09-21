@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AeroEdge-X — Digital Twin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#080e1a;--surface:#0d1a2e;--border:#1a3a5c;--accent:#00b4d8;--accent2:#0077b6;--text:#e0eaf8;--muted:#4a6a8a;--success:#00c896;--danger:#ff4757;--warning:#ffa502;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;gap:16px;}
+.logo{font-size:18px;font-weight:700;color:var(--accent);letter-spacing:2px;}
+.logo span{color:#90e0ef;}
+.back-btn{margin-left:auto;padding:6px 16px;background:var(--accent2);border:none;border-radius:6px;color:#fff;font-size:12px;cursor:pointer;text-decoration:none;}
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;}
+.nav-item{padding:10px 20px;font-size:12px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;}
+.nav-item.active{color:var(--accent);border-bottom-color:var(--accent);}
+.content{flex:1;padding:24px;max-width:1200px;margin:0 auto;width:100%;}
+.page-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;}
+.stat-val{font-size:28px;font-weight:700;color:var(--accent);}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.table-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-title{font-size:13px;font-weight:600;color:var(--text);}
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 16px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);background:var(--surface);}
+td{padding:12px 16px;font-size:13px;border-bottom:1px solid rgba(26,58,92,0.5);}
+tr:hover td{background:rgba(0,180,216,0.04);}
+tr:last-child td{border-bottom:none;}
+.badge{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;}
+.badge-high{background:rgba(255,71,87,0.15);color:#ff4757;border:1px solid rgba(255,71,87,0.3);}
+.badge-medium{background:rgba(255,165,2,0.15);color:#ffa502;border:1px solid rgba(255,165,2,0.3);}
+.badge-low{background:rgba(0,200,150,0.15);color:#00c896;border:1px solid rgba(0,200,150,0.3);}
+.defect-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(0,119,182,0.2);color:var(--accent);border:1px solid rgba(0,119,182,0.3);}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.statusbar{background:var(--surface);border-top:1px solid var(--border);padding:6px 24px;display:flex;align-items:center;gap:16px;font-size:11px;color:var(--muted);}
+.sb-dot{width:6px;height:6px;border-radius:50%;}
+</style>
+</head>
+<body>
+
+<header>
+    <span class="logo">Aero<span>Edge</span>-X</span>
+    <span style="font-size:12px;color:var(--muted);">Digital Twin — Inspection Log</span>
+    <a href="/" class="back-btn">← Back to Inspection</a>
+</header>
+
+<nav>
+    <div class="nav-item" onclick="location.href='/'">⬡ Inspection</div>
+    <div class="nav-item">⬡ Manuals</div>
+    <div class="nav-item">⬡ Tools</div>
+    <div class="nav-item active">⬡ Digital Twin</div>
+    <div class="nav-item">⬡ Logs</div>
+    <div class="nav-item">⬡ Settings</div>
+</nav>
+
+<div class="content">
+    <div class="page-title">Digital Twin — Inspection History</div>
+    <div class="page-sub">All inspections logged locally · SQLite · Fully offline</div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-val" id="total-inspections">—</div>
+            <div class="stat-lbl">Total Inspections</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="high-severity">—</div>
+            <div class="stat-lbl">High Severity</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="most-common">—</div>
+            <div class="stat-lbl">Most Common Defect</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="last-inspection">—</div>
+            <div class="stat-lbl">Last Inspection</div>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <div class="table-header">
+            <span class="table-title">Inspection Records</span>
+            <span style="font-size:11px;color:var(--muted);" id="record-count">Loading...</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Primary Defect</th>
+                    <th>Severity</th>
+                    <th>Manual Source</th>
+                    <th>Page</th>
+                </tr>
+            </thead>
+            <tbody id="history-table">
+                <tr><td colspan="6" class="empty">Loading inspections...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="statusbar">
+    <div style="display:flex;align-items:center;gap:6px;">
+        <div class="sb-dot" style="background:var(--success);"></div>SQLite connected
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+        <div class="sb-dot" style="background:var(--success);"></div>Digital Twin active
+    </div>
+    <span style="margin-left:auto;font-size:11px;color:var(--muted);">AeroEdge-X · Offline MRO Assistant</span>
+</div>
+
+<script>
+async function loadHistory(){
+    const res = await fetch('/history?limit=50');
+    const data = await res.json();
+
+    if(data.length === 0){
+        document.getElementById('history-table').innerHTML =
+            '<tr><td colspan="6" class="empty">No inspections yet — run analysis first</td></tr>';
+        return;
+    }
+
+    // Stats
+    document.getElementById('total-inspections').textContent = data.length;
+    const highCount = data.filter(d => d.severity === 'high').length;
+    document.getElementById('high-severity').textContent = highCount;
+
+    // Most common defect
+    const defectCounts = {};
+    data.forEach(d => { defectCounts[d.primary_defect] = (defectCounts[d.primary_defect] || 0) + 1; });
+    const mostCommon = Object.entries(defectCounts).sort((a,b) => b[1]-a[1])[0];
+    document.getElementById('most-common').textContent = mostCommon ? mostCommon[0].toUpperCase() : '—';
+
+    // Last inspection time
+    const last = new Date(data[0].timestamp);
+    document.getElementById('last-inspection').textContent = last.toLocaleDateString();
+
+    // Table
+    document.getElementById('record-count').textContent = data.length + ' records';
+    document.getElementById('history-table').innerHTML = data.map(d => `
+        <tr>
+            <td style="color:var(--accent);font-weight:700;">#${d.id}</td>
+            <td style="color:var(--muted);">${new Date(d.timestamp).toLocaleString()}</td>
+            <td><span class="defect-tag">${d.primary_defect}</span></td>
+            <td><span class="badge badge-${d.severity}">${d.severity.toUpperCase()}</span></td>
+            <td style="color:var(--muted);font-size:12px;">${d.source ? d.source.split('\\').pop().split('/').pop() : 'N/A'}</td>
+            <td style="color:var(--muted);">${d.page || '—'}</td>
+        </tr>
+    `).join('');
+}
+
+loadHistory();
+</script>
+</body>
+</html>

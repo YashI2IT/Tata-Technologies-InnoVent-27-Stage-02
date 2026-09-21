@@ -24,8 +24,8 @@ class VisionAgent:
         self.model = YOLO(MODEL_PATH)
         print("[VisionAgent] Ready ✅")
 
-    def detect(self, image_path: str) -> dict:
-        results = self.model(image_path, conf=CONFIDENCE_THRESHOLD, verbose=False, save=False)
+    def detect(self, image_path: str, threshold: float = CONFIDENCE_THRESHOLD) -> dict:
+        results = self.model(image_path, conf=threshold, verbose=False, save=False)
         detections = []
 
         for result in results:
@@ -44,11 +44,18 @@ class VisionAgent:
 
         detections.sort(key=lambda d: d["confidence"], reverse=True)
         primary_defect = detections[0]["defect_type"] if detections else "none"
+        annotated_path = image_path.rsplit('.', 1)[0] + '_annotated.jpg'
+        
+        for result in results:
+            import cv2
+            annotated_img = result.plot()
+            cv2.imwrite(annotated_path,annotated_img)
 
         return {
             "agent": "VisionAgent",
             "timestamp": datetime.now().isoformat(),
             "image": image_path,
+            "annotated_image":annotated_path,
             "primary_defect": primary_defect,
             "total_detections": len(detections),
             "detections": detections,

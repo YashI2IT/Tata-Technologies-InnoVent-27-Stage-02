@@ -11,3 +11,6 @@ werkzeug
 gunicorn
 torch
 torchvision
+langchain
+langchain-ollama
+reportlab

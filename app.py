@@ -4,6 +4,8 @@ from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 from vision_agent import VisionAgent
 from rag_agent import RAGAgent
+from reasoning_agent import ReasoningAgent
+from report_generator import generate_report
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -15,6 +17,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 print("🚀 Loading AeroEdge-X agents...")
 vision = VisionAgent()
 rag = RAGAgent()
+reasoning = ReasoningAgent()
 print("✅ All agents ready!")
 
 def allowed_file(filename):
@@ -40,7 +43,8 @@ def analyze():
     file.save(filepath)
 
     # 3. Vision Agent
-    vision_result = vision.detect(filepath)
+    threshold = float(request.form.get('threshold',0.4))
+    vision_result = vision.detect(filepath,threshold=threshold)
 
     # 4. RAG Agent
     if vision_result['status'] == 'defect_found':
@@ -53,17 +57,29 @@ def analyze():
             'chunks': []
         }
 
-    # 5. Digital Twin
+    # 5. Reasoning Agent
+    if vision_result['status'] == 'defect_found':
+        reasoning_result = reasoning.generate(
+            defect_type = vision_result['primary_defect'],
+            severity = vision_result['detections'][0]['severity'],
+            procedure = rag_result['procedure']
+        )
+    else:
+        reasoning_result = {'steps':[],'raw_response':''}    
+    
+    
+    # 6. Digital Twin
     from digital_twin import DigitalTwinAgent
     twin = DigitalTwinAgent()
-    inspection_id = twin.log_inspection(vision_result, rag_result)
+    inspection_id = twin.log_inspection(vision_result, rag_result, reasoning_result)
 
-    # 6. Return response
+    # 7. Return response
     return jsonify({
         'inspection_id': inspection_id,
         'image_url': f'/uploads/{filename}',
         'vision': vision_result,
-        'rag': rag_result
+        'rag': rag_result,
+        'reasoning':reasoning_result
     })
 
 @app.route('/uploads/<filename>')
@@ -75,7 +91,55 @@ def uploaded_file(filename):
 def history():
     from digital_twin import DigitalTwinAgent
     twin = DigitalTwinAgent()
-    return jsonify(twin.get_history())
+    limit = int(request.args.get('limit',10))
+    return jsonify(twin.get_history(limit=limit))
+
+@app.route('/digital-twin')
+def digital_twin_page():
+    return render_template('digital_twin.html')
+
+@app.route('/report/<int:inspection_id>')
+def download_report(inspection_id):
+    from flask import send_file
+    from digital_twin import DigitalTwinAgent
+    import json
+
+    # Get inspection from digital twin
+    twin = DigitalTwinAgent()
+    cursor = twin.conn.execute(
+        'SELECT * FROM inspections WHERE id = ?', (inspection_id,)
+    )
+    row = cursor.fetchone()
+
+    if not row:
+        return jsonify({'error': 'Inspection not found'}), 404
+
+    # Rebuild results from stored data
+    vision_result = {
+        'timestamp': row[1],
+        'image': row[2],
+        'annotated_image': row[2].replace('.', '_annotated.'),
+        'detections': json.loads(row[3]),
+        'primary_defect': row[4],
+        'status': 'defect_found',
+        'total_detections': len(json.loads(row[3]))
+    }
+    print(f"Annotated image path: {vision_result['annotated_image']}")
+    print(f"File exists: {os.path.exists(vision_result['annotated_image'])}")
+    rag_result = {
+        'procedure': row[6],
+        'source': row[7],
+        'page': row[8]
+    }
+    reasoning_result = {'steps': json.loads(row[9]) if row[9] else []}
+
+    # Generate PDF
+    os.makedirs('reports', exist_ok=True)
+    output_path = f'reports/inspection_{inspection_id}.pdf'
+    generate_report(vision_result, rag_result, reasoning_result, inspection_id, output_path)
+
+    return send_file(output_path, as_attachment=True,
+                     download_name=f'AeroEdge_Inspection_{inspection_id}.pdf')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=7860)  

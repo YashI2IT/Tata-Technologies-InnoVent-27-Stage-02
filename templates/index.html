@@ -648,6 +648,8 @@
                 <span class="pipe-arrow">›</span>
                 <div class="pipe-step" id="ps-rag">Retrieval</div>
                 <span class="pipe-arrow">›</span>
+                <div class="pipe-step" id="ps-reasoning">Reasoning</div>
+                <span class="pipe-arrow">›</span>
                 <div class="pipe-step" id="ps-twin">Digital Twin</div>
             </div>
             <div class="hbar"></div>
@@ -662,7 +664,7 @@
         <div class="nav-item active">⬡ Inspection</div>
         <div class="nav-item">⬡ Manuals</div>
         <div class="nav-item">⬡ Tools</div>
-        <div class="nav-item">⬡ Digital Twin</div>
+        <div class="nav-item" onclick="location.href='/digital-twin'">⬡ Digital Twin</div>
         <div class="nav-item">⬡ Logs</div>
         <div class="nav-item">⬡ Settings</div>
     </nav>
@@ -688,6 +690,20 @@
                 <div id="preview-wrap">
                     <img id="preview-img" src="" alt="preview">
                     <canvas id="bbox-canvas"></canvas>
+                </div>
+                <!-- Confidence Threshold Slider -->
+                <div style="margin-bottom:14px;display:none;" id="slider-wrap">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Confidence Threshold</span>
+                        <span style="font-size:13px;font-weight:700;color:var(--accent);" id="threshold-val">40%</span>
+                    </div>
+                    <input type="range" id="threshold-slider" min="10" max="90" value="40" step="5"
+                        style="width:100%;accent-color:var(--accent);cursor:pointer;"
+                        oninput="document.getElementById('threshold-val').textContent=this.value+'%'">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;">
+                        <span>More detections</span>
+                        <span>High confidence only</span>
+                    </div>
                 </div>
                 <button id="analyze-btn" onclick="analyze()">⬡ RUN DEFECT ANALYSIS</button>
                 <div class="spinner" id="spinner"></div>
@@ -775,6 +791,11 @@
                     <div class="section-label">Repair procedure</div>
                     <div id="steps-list"></div>
                     <button class="sync-btn" id="sync-btn" onclick="syncTwin()">⬡ Sync to Local Digital Twin</button>
+                    <button class="sync-btn" id="report-btn" 
+                        style="display:none;margin-top:8px;background:var(--accent2);" 
+                        onclick="downloadReport()">
+                        ⬡ Download Inspection Report (PDF)
+                    </button>
                 </div>
             </div>
         </div>
@@ -804,6 +825,13 @@
         const ctx = canvas.getContext('2d');
         let currentFile = null;
         let lastDetections = [];
+        let currentInspectionId = null;
+
+        function downloadReport(){
+            if(currentInspectionId){
+                window.open(`/report/${currentInspectionId}`, '_blank');
+            }
+}
 
         const COLORS = { crack: '#ff4757', dent: '#ffa502', 'missing-head': '#a29bfe', 'paint-off': '#00cec9', scratch: '#fdcb6e', defect: '#636e72' };
 
@@ -820,6 +848,7 @@
                 previewImg.src = e.target.result;
                 previewWrap.style.display = 'block';
                 analyzeBtn.style.display = 'block';
+                document.getElementById('slider-wrap').style.display = 'block';
                 document.getElementById('vision-results').style.display = 'none';
                 document.getElementById('rag-results').style.display = 'none';
                 document.getElementById('repair-results').style.display = 'none';
@@ -842,7 +871,7 @@
         });
 
         function resetPipeline() {
-            ['ps-vision', 'ps-orch', 'ps-rag', 'ps-twin'].forEach(id => {
+            ['ps-vision', 'ps-orch', 'ps-rag', 'ps-reasoning', 'ps-twin'].forEach(id => {
                 document.getElementById(id).className = 'pipe-step';
             });
         }
@@ -863,6 +892,8 @@
 
             const fd = new FormData();
             fd.append('image', currentFile);
+            const threshold = document.getElementById('threshold-slider').value / 100;
+            fd.append('threshold', threshold);
 
             try {
                 setStep('ps-vision', 'active');
@@ -878,6 +909,10 @@
                 await sleep(400);
                 setStep('ps-rag', 'done');
 
+                setStep('ps-reasoning', 'active');
+                await sleep(300);
+                setStep('ps-reasoning', 'done');
+
                 setStep('ps-twin', 'active');
                 await sleep(200);
                 setStep('ps-twin', 'done');
@@ -888,6 +923,8 @@
 
                 document.getElementById('vision-status').textContent = 'Complete';
                 document.getElementById('inspection-counter').textContent = 'Inspection #' + data.inspection_id;
+                currentInspectionId = data.inspection_id;
+                document.getElementById('report-btn').style.display = 'block';
 
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -985,12 +1022,27 @@
         }
 
         function renderRepair(data) {
-            const r = data.rag;
             document.getElementById('repair-empty').style.display = 'none';
             document.getElementById('repair-results').style.display = 'block';
-            const sentences = r.procedure.replace(/\n/g, ' ').split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20);
-            const titles = ['Prepare work area', 'Inspect and assess', 'Apply corrective action', 'Verify repair', 'Final inspection'];
-            document.getElementById('steps-list').innerHTML = sentences.slice(0, 5).map((s, i) => `
+
+            const steps = data.reasoning?.steps;
+
+            if(steps && steps.length > 0){
+                // Use Phi-3 Mini generated steps
+                document.getElementById('steps-list').innerHTML = steps.map(s => `
+        <div class="step-card">
+            <div class="step-num">${s.number}</div>
+            <div class="step-content">
+                <div class="step-title">${s.title}</div>
+                <div class="step-desc">${s.description}</div>
+            </div>
+        </div>`).join('');
+            } else {
+                // Fallback to RAG text split
+                const r = data.rag;
+                const sentences = r.procedure.replace(/\n/g, ' ').split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20);
+                const titles = ['Prepare work area', 'Inspect and assess', 'Apply corrective action', 'Verify repair', 'Final inspection'];
+                document.getElementById('steps-list').innerHTML = sentences.slice(0, 5).map((s, i) => `
         <div class="step-card">
             <div class="step-num">${i + 1}</div>
             <div class="step-content">
@@ -998,6 +1050,7 @@
                 <div class="step-desc">${s}</div>
             </div>
         </div>`).join('');
+            }
             document.getElementById('sync-btn').style.display = 'block';
         }
 
@@ -1005,6 +1058,7 @@
             document.getElementById('sync-btn').textContent = '⬡ Synced to Digital Twin ✓';
             document.getElementById('sync-btn').style.background = 'var(--accent2)';
             document.getElementById('sync-btn').style.color = '#fff';
+            document.getElementById('report-btn').style.display = 'block';
         }
 
         // Redraw boxes on window resize
