@@ -1,0 +1,31 @@
+flowchart LR
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef planned fill:#FFF4E0,color:#000000,stroke:#FF9C00,stroke-width:1.5px,stroke-dasharray:6 4;
+    classDef future fill:#F3E8FF,color:#000000,stroke:#7B2CBF,stroke-width:1.5px,stroke-dasharray:6 4;
+    classDef neutral fill:#F5F7FA,color:#000000,stroke:#667085,stroke-width:1px;
+
+    TITLE["TARGET ARCHITECTURE<br/>NOT YET IMPLEMENTED"]:::neutral
+
+    subgraph EDG["EDGE"]
+        direction TB
+        E1["Local Inspection<br/>Completed"]:::verified
+        E2["SQLite + Local Artifacts"]:::verified
+        E3["Sync Queue<br/>PLANNED"]:::planned
+        E4["Secure API<br/>PLANNED"]:::planned
+        E1 --> E2 --> E3 --> E4
+    end
+
+    subgraph CLD["AWS CLOUD — TARGET"]
+        direction TB
+        A1["DynamoDB<br/>Inspection Metadata<br/>TARGET"]:::future
+        A2["S3<br/>Images + Reports<br/>TARGET"]:::future
+    end
+
+    W1["Cloud Write Confirmation<br/>PLANNED"]:::planned
+    W2["Local Sync Status<br/>PLANNED"]:::planned
+
+    E4 -->|"HTTPS\nPLANNED"| A1
+    E4 -->|"HTTPS\nPLANNED"| A2
+    A1 --> W1
+    A2 --> W1
+    W1 --> W2

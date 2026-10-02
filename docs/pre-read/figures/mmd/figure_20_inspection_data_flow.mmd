@@ -1,0 +1,16 @@
+flowchart TD
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef current fill:#EAF4FF,color:#000000,stroke:#0000B3,stroke-width:1.5px;
+    classDef planned fill:#FFF4E0,color:#000000,stroke:#FF9C00,stroke-width:1.5px,stroke-dasharray:6 4;
+
+    IC["Aircraft / Component<br/>Inspection Context"]:::current
+    IMG["Image<br/>image_path"]:::verified
+    DET["Detection Metadata<br/>defect_type / confidence<br/>bounding_box / severity"]:::verified
+    RET["Retrieved Maintenance Context<br/>procedure / source / page"]:::verified
+    GEN["AI Guidance<br/>reasoning_steps"]:::verified
+    REC["Inspection Record<br/>id / timestamp / image_path<br/>primary_defect / severity<br/>procedure / source / page<br/>reasoning_steps"]:::verified
+    RPT["Report Artifact<br/>pdf_path"]:::verified
+    STR["Local Storage<br/>SQLite + Uploads + Reports"]:::verified
+    SYN["Cloud Synchronisation<br/>PLANNED"]:::planned
+
+    IC --> IMG --> DET --> RET --> GEN --> REC --> RPT --> STR --> SYN

@@ -1,0 +1,28 @@
+flowchart TD
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef planned fill:#FFF4E0,color:#000000,stroke:#FF9C00,stroke-width:1.5px,stroke-dasharray:6 4;
+    classDef neutral fill:#F5F7FA,color:#000000,stroke:#667085,stroke-width:1px;
+
+    ROOT["AeroEdge-X<br/>Prototype Validation Plan"]:::neutral
+
+    subgraph VFD["VERIFIED"]
+        direction LR
+        V1["Offline Inspection<br/>Complete local workflow<br/>VERIFIED"]:::verified
+        V2["Defect Detection<br/>YOLOv11 localisation<br/>VERIFIED"]:::verified
+        V3["RAG Retrieval<br/>Correct source + page<br/>VERIFIED"]:::verified
+        V4["Local Reasoning<br/>Grounded guidance<br/>VERIFIED"]:::verified
+        V5["Persistence<br/>SQLite record<br/>VERIFIED"]:::verified
+        V6["Reporting<br/>PDF via ReportLab<br/>VERIFIED"]:::verified
+    end
+
+    subgraph PLN["PLANNED — NOT YET VERIFIED"]
+        direction LR
+        P1["Jetson<br/>Edge inference<br/>PLANNED"]:::planned
+        P2["Industrial Camera<br/>Live acquisition<br/>PLANNED"]:::planned
+        P3["Synchronisation<br/>Offline queue + reconnect<br/>PLANNED"]:::planned
+        P4["Recovery<br/>Restart / network failure<br/>PLANNED"]:::planned
+        P5["Performance<br/>Latency / RAM / GPU / Temp<br/>PLANNED — no data"]:::planned
+    end
+
+    ROOT --> VFD
+    ROOT --> PLN

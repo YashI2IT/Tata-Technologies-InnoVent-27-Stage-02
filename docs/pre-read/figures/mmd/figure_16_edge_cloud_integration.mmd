@@ -1,0 +1,15 @@
+flowchart TD
+    classDef current fill:#0000B3,color:#ffffff,stroke:#000000,stroke-width:2px;
+    classDef planned fill:#FF9C00,color:#ffffff,stroke:#000000,stroke-width:2px,stroke-dasharray: 5 5;
+
+    subgraph Current [CURRENT VERIFIED]
+        A[Electron Application<br/><br/><small>Windows Edge</small>]:::current
+    end
+
+    subgraph Target [NEXT IMPLEMENTATION]
+        B[Jetson Orin Nano<br/><br/><small>TensorRT Accelerated</small>]:::planned
+        C[AWS Synchronization<br/><br/><small>DynamoDB + S3</small>]:::planned
+    end
+
+    A -.->|Migration| B
+    B -.->|Cloud Sync| C

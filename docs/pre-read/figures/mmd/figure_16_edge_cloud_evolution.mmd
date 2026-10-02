@@ -1,0 +1,31 @@
+flowchart LR
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef planned fill:#FFF4E0,color:#000000,stroke:#FF9C00,stroke-width:1.5px,stroke-dasharray:6 4;
+    classDef future fill:#F3E8FF,color:#000000,stroke:#7B2CBF,stroke-width:1.5px,stroke-dasharray:6 4;
+
+    subgraph CUR["CURRENT VERIFIED"]
+        direction TB
+        C1["Electron + React UI"]:::verified
+        C2["Flask REST API"]:::verified
+        C3["YOLOv11"]:::verified
+        C4["ChromaDB + Phi-3 Mini"]:::verified
+        C5["SQLite + PDF Report"]:::verified
+    end
+
+    subgraph NXT["NEXT IMPLEMENTATION — PLANNED"]
+        direction TB
+        N1["Jetson Orin Nano"]:::planned
+        N2["Industrial Camera"]:::planned
+        N3["ONNX / TensorRT"]:::planned
+        N4["Offline Sync Queue"]:::planned
+    end
+
+    subgraph TGT["TARGET CLOUD"]
+        direction TB
+        F1["AWS Synchronisation Layer"]:::future
+        F2["DynamoDB<br/>Inspection Metadata"]:::future
+        F3["S3<br/>Images + Reports"]:::future
+    end
+
+    C5 -->|"Edge Deployment\nPLANNED"| N1
+    N4 -->|"Cloud Integration\nFUTURE"| F1

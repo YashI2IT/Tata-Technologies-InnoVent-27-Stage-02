@@ -1,0 +1,30 @@
+flowchart LR
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef planned fill:#FFF4E0,color:#000000,stroke:#FF9C00,stroke-width:1.5px,stroke-dasharray:6 4;
+    classDef future fill:#F3E8FF,color:#000000,stroke:#7B2CBF,stroke-width:1.5px,stroke-dasharray:6 4;
+
+    subgraph M1["M1 — COMPLETED"]
+        M1A["Core AI POC<br/>YOLOv11 / ChromaDB<br/>Phi-3 Mini / SQLite / PDF"]:::verified
+    end
+
+    subgraph M2["M2 — COMPLETED"]
+        M2A["Architecture + Desktop<br/>Electron / React / Flask"]:::verified
+    end
+
+    subgraph M3["M3 — NEXT IMPLEMENTATION"]
+        M3A["Jetson / Camera<br/>ONNX / TensorRT<br/>AWS Synchronisation"]:::planned
+    end
+
+    subgraph M4["M4 — REMAINING VALIDATION"]
+        M4A["End-to-End Integration<br/>Dataset Validation<br/>Latency Measurement<br/>Resource Profiling<br/>Offline / Reconnect"]:::planned
+    end
+
+    subgraph M5["M5 — STAGE 3 TARGET"]
+        M5A["End-to-End Prototype<br/>January 2027"]:::future
+    end
+
+    subgraph M6["M6 — FUTURE SCOPE"]
+        M6A["Thermal / Multimodal<br/>Multi-Camera / Multi-Jetson<br/>Fleet Analytics / Digital Twin<br/>Predictive Maintenance<br/>Production Controls"]:::future
+    end
+
+    M1 --> M2 --> M3 --> M4 --> M5 --> M6

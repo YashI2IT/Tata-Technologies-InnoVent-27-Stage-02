@@ -1,0 +1,45 @@
+flowchart TB
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef current fill:#EAF4FF,color:#000000,stroke:#0000B3,stroke-width:1.5px;
+
+    subgraph APP["TECHNICIAN APPLICATION"]
+        direction LR
+        T1["Electron Desktop<br/>Windows Installer"]:::verified
+        T2["React UI<br/>Vite + TypeScript"]:::verified
+    end
+
+    subgraph SVC["LOCAL SERVICE / WORKFLOW"]
+        direction LR
+        S1["Flask REST API<br/>Port 7860"]:::verified
+        S2["Inspection Workflow<br/>Vision → RAG → Reasoning → Persist"]:::current
+    end
+
+    subgraph AIK["AI + KNOWLEDGE"]
+        direction LR
+        A1["OpenCV"]:::verified
+        A2["YOLOv11<br/>best.pt"]:::verified
+        A3["ChromaDB<br/>all-MiniLM-L6-v2"]:::verified
+        A4["Phi-3 Mini<br/>Ollama"]:::verified
+    end
+
+    subgraph DAT["LOCAL DATA + OUTPUT"]
+        direction LR
+        D1["SQLite<br/>Inspection-State<br/>Persistence"]:::verified
+        D2["Local Images<br/>Uploads"]:::verified
+        D3["Maintenance PDFs<br/>Manuals"]:::verified
+        D4["PDF Report<br/>ReportLab"]:::verified
+    end
+
+    T1 --- T2
+    T2 -->|"HTTP"| S1
+    S1 --- S2
+    S2 --> A1
+    A1 --> A2
+    S2 --> A3
+    A3 --> A4
+    D3 -->|"Indexing"| A3
+    A2 -->|"Detection"| S2
+    A4 -->|"Guidance"| S2
+    S2 -->|"Persist"| D1
+    S2 -->|"Store"| D2
+    D1 --> D4

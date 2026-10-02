@@ -1,0 +1,53 @@
+flowchart LR
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef current fill:#EAF4FF,color:#000000,stroke:#0000B3,stroke-width:1.5px;
+    classDef neutral fill:#F5F7FA,color:#000000,stroke:#667085,stroke-width:1px;
+
+    TECH["TECHNICIAN"]:::neutral
+
+    subgraph P1["01 PREPARE"]
+        direction TB
+        A1["Open AeroEdge-X"]:::current
+        A2["Select Aircraft / Component"]:::current
+        A3["Configure Inspection"]:::current
+        A1 --> A2 --> A3
+    end
+
+    subgraph P2["02 CAPTURE"]
+        direction TB
+        B1["Local Image Upload<br/>.jpg / .png"]:::current
+    end
+
+    subgraph P3["03 INSPECT"]
+        direction TB
+        C1["YOLOv11<br/>Ultralytics / PyTorch"]:::verified
+        C2["Defect Class<br/>Confidence<br/>Bounding Box<br/>Severity"]:::verified
+        C1 --> C2
+    end
+
+    subgraph P4["04 UNDERSTAND"]
+        direction TB
+        D1["ChromaDB<br/>Local Maintenance Docs"]:::verified
+        D2["Phi-3 Mini<br/>Ollama Local Runtime"]:::verified
+        D1 --> D2
+    end
+
+    subgraph P5["05 RECORD"]
+        direction TB
+        E1["Technician Review"]:::current
+        E2["SQLite<br/>Inspection-State Persistence"]:::verified
+        E3["Local Artifacts"]:::current
+        E1 --> E2 --> E3
+    end
+
+    subgraph P6["06 REPORT"]
+        direction TB
+        F1["PDF Report<br/>ReportLab"]:::verified
+    end
+
+    TECH --> A1
+    A3 --> B1
+    B1 --> C1
+    C2 --> D1
+    D2 --> E1
+    E3 --> F1

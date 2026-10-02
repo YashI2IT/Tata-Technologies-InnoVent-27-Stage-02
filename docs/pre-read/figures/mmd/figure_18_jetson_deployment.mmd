@@ -1,0 +1,11 @@
+flowchart TD
+    classDef planned fill:#FF9C00,color:#ffffff,stroke:#000000,stroke-width:2px,stroke-dasharray: 5 5;
+
+    Z[PLANNED / NEXT STAGE]:::planned
+
+    A[Industrial Camera]:::planned --> B[Frame Capture]:::planned
+    B --> C[Jetson Orin Nano]:::planned
+    C --> D[OpenCV]:::planned
+    D --> E[YOLOv11]:::planned
+    E --> F[TensorRT]:::planned
+    F --> G[Local AI Pipeline]:::planned

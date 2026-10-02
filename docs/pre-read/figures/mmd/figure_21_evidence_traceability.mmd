@@ -1,0 +1,45 @@
+flowchart LR
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef current fill:#EAF4FF,color:#000000,stroke:#0000B3,stroke-width:1.5px;
+    classDef neutral fill:#F5F7FA,color:#000000,stroke:#667085,stroke-width:1px;
+
+    subgraph VE["VISUAL EVIDENCE"]
+        direction TB
+        V1["Captured Image"]:::verified
+        V2["YOLOv11 Detection"]:::verified
+        V3["Bounding Box +<br/>Confidence"]:::verified
+        V1 --> V2 --> V3
+    end
+
+    subgraph ME["MAINTENANCE EVIDENCE"]
+        direction TB
+        M1["Maintenance PDF"]:::verified
+        M2["ChromaDB Retrieval<br/>Source + Page"]:::verified
+        M3["Retrieved Context"]:::verified
+        M1 --> M2 --> M3
+    end
+
+    subgraph GG["GENERATED GUIDANCE"]
+        direction TB
+        G1["Phi-3 Mini<br/>Ollama"]:::verified
+        G2["Grounded Guidance<br/>5 Repair Steps"]:::verified
+        G1 --> G2
+    end
+
+    subgraph HR["HUMAN REVIEW"]
+        H1["Technician Review"]:::current
+    end
+
+    subgraph RO["RECORDED OUTPUT"]
+        direction TB
+        O1["SQLite<br/>Inspection Record"]:::verified
+        O2["PDF Report"]:::verified
+        O1 --> O2
+    end
+
+    V3 --> G1
+    M3 --> G1
+    G2 --> H1
+    H1 --> O1
+
+    CHAIN["Image > Evidence > Source > Guidance > Record > Report"]:::neutral

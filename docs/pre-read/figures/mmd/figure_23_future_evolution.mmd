@@ -1,0 +1,39 @@
+flowchart LR
+    classDef future fill:#F3E8FF,color:#000000,stroke:#7B2CBF,stroke-width:1.5px,stroke-dasharray:6 4;
+
+    subgraph INS["INSPECTION"]
+        direction TB
+        I1["Real-Time Industrial Camera"]:::future
+        I2["Thermal Sensing<br/>IR Camera"]:::future
+        I3["RGB + Thermal<br/>Multimodal Inspection"]:::future
+    end
+
+    subgraph ESC["EDGE SCALE"]
+        direction TB
+        E1["Multi-Camera<br/>Single Jetson"]:::future
+        E2["Multi-Jetson<br/>Distributed Edge"]:::future
+    end
+
+    subgraph FLT["FLEET"]
+        direction TB
+        F1["AWS Fleet Analytics"]:::future
+        F2["Fleet Management"]:::future
+    end
+
+    subgraph INT["INTELLIGENCE"]
+        direction TB
+        N1["Advanced Digital Twin"]:::future
+        N2["Predictive Maintenance"]:::future
+        N3["Technician Feedback"]:::future
+        N4["Model Monitoring<br/>Controlled Retraining"]:::future
+    end
+
+    subgraph PRD["PRODUCTION CONTROLS"]
+        direction TB
+        P1["Human Approval<br/>Audit Trail"]:::future
+        P2["RBAC"]:::future
+        P3["Secure Device Identity<br/>Encryption"]:::future
+        P4["Versioned Models<br/>Signed Updates<br/>Rollback / Recovery"]:::future
+    end
+
+    INS --> ESC --> FLT --> INT --> PRD

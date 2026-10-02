@@ -1,0 +1,41 @@
+flowchart LR
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef current fill:#EAF4FF,color:#000000,stroke:#0000B3,stroke-width:1.5px;
+
+    subgraph IN["INPUT"]
+        I1["Uploaded Image"]:::current
+    end
+
+    subgraph VIS["VISION"]
+        V1["OpenCV<br/>Preprocessing"]:::verified
+        V2["YOLOv11<br/>best.pt"]:::verified
+        V3["Detection Evidence<br/>Defect Class<br/>Confidence<br/>Bounding Box<br/>Severity"]:::verified
+        V1 --> V2 --> V3
+    end
+
+    subgraph KNO["KNOWLEDGE"]
+        K1["Inspection Context<br/>Defect Type + Severity"]:::current
+        K2["ChromaDB<br/>all-MiniLM-L6-v2<br/>Similarity k=3"]:::verified
+        K3["Local Maintenance PDFs<br/>PyMuPDF Ingestion"]:::verified
+        K4["Retrieved Evidence<br/>Procedure / Source / Page"]:::verified
+        K3 --> K2
+        K1 --> K2
+        K2 --> K4
+    end
+
+    subgraph REA["REASONING"]
+        R1["Phi-3 Mini<br/>Ollama localhost:11434"]:::verified
+        R2["Grounded Maintenance Guidance<br/>5 Repair Steps"]:::verified
+        R1 --> R2
+    end
+
+    subgraph OUT["OUTPUT"]
+        O1["SQLite<br/>Inspection Record"]:::verified
+        O2["PDF Report<br/>ReportLab"]:::verified
+        O1 --> O2
+    end
+
+    I1 --> V1
+    V3 --> K1
+    K4 --> R1
+    R2 --> O1

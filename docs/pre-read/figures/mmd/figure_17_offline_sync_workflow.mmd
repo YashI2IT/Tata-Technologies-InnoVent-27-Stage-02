@@ -1,0 +1,21 @@
+flowchart TD
+    classDef verified fill:#12C6B3,color:#000000,stroke:#0000B3,stroke-width:1px;
+    classDef current fill:#EAF4FF,color:#000000,stroke:#0000B3,stroke-width:1.5px;
+    classDef planned fill:#FFF4E0,color:#000000,stroke:#FF9C00,stroke-width:1.5px,stroke-dasharray:6 4;
+
+    W1["Inspection Complete"]:::current
+    W2["Local Inspection Record<br/>+ Artifacts Saved<br/>SQLite + Local Storage"]:::verified
+    W3["Create Sync Job<br/>PLANNED"]:::planned
+    W4["Status: PENDING<br/>PLANNED"]:::planned
+    W5{"Internet<br/>Available?<br/>PLANNED"}:::planned
+    W6["Keep Local"]:::planned
+    W7["Retry Later"]:::planned
+    W8["Sync Worker<br/>PLANNED"]:::planned
+    W9["Secure Cloud API<br/>PLANNED"]:::planned
+    W10["Metadata + Artifacts<br/>Uploaded<br/>PLANNED"]:::planned
+    W11["Cloud Write Confirmed<br/>PLANNED"]:::planned
+    W12["Local Status = SYNCED<br/>PLANNED"]:::planned
+
+    W1 --> W2 --> W3 --> W4 --> W5
+    W5 -->|"NO"| W6 --> W7 --> W5
+    W5 -->|"YES"| W8 --> W9 --> W10 --> W11 --> W12
