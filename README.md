@@ -304,18 +304,6 @@ Tata_Innovent/
 - [ ] AWS S3 storage
 - [ ] Multi-device fleet management
 
----
-
-## Team
-
-**Tata Technologies — InnoVent-27**
-
-| Role | Contributor |
-|------|-----------|
-| Developer | [YashI2IT](https://github.com/YashI2IT) |
-
----
-
 ## License
 
 MIT License — see [LICENSE](LICENSE).
