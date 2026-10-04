@@ -1,0 +1,28 @@
+flowchart TD
+    classDef module fill:#0000B3,stroke:#000000,stroke-width:2px,color:#FFFFFF,width:250px
+    classDef out fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000,width:250px
+
+    M1["01 VISION<br/>YOLOv11 + OpenCV"]:::module
+    O1["Defect class<br/>Bounding box<br/>Confidence<br/>Severity"]:::out
+    M1 --> O1
+
+    M2["02 KNOWLEDGE<br/>ChromaDB + Manuals"]:::module
+    O2["Relevant evidence<br/>Source/page reference"]:::out
+    M2 --> O2
+
+    M3["03 REASONING<br/>Phi-3 Mini + Ollama"]:::module
+    O3["Grounded maintenance<br/>guidance steps"]:::out
+    M3 --> O3
+
+    M4["04 INSPECTION STATE<br/>SQLite"]:::module
+    O4["Inspection record<br/>Component history"]:::out
+    M4 --> O4
+
+    M5["05 REPORTING<br/>ReportLab"]:::module
+    O5["Traceable PDF report"]:::out
+    M5 --> O5
+
+    O1 --> M2
+    O2 --> M3
+    O3 --> M4
+    O4 --> M5

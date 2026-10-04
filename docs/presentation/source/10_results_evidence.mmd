@@ -1,0 +1,16 @@
+flowchart TD
+    classDef card fill:#FFFFFF,stroke:#0000B3,stroke-width:4px,color:#000000
+    classDef hl fill:#12C6B3,stroke:#000000,stroke-width:2px,color:#000000
+    classDef field fill:#EAF4FF,stroke:#0000B3,stroke-width:1px,color:#000000
+
+    subgraph CARD ["Verified Evidence Card: Inspection #2"]
+        direction TB
+        F1["DETECTION:<br/>DENT"]:::field
+        F2["MODEL CONFIDENCE:<br/>86.0%"]:::hl
+        F3["SEVERITY:<br/>HIGH"]:::field
+        F4["MAINTENANCE SOURCE:<br/>AC 43.13-1B (Page 150)"]:::field
+        F5["GROUNDED GUIDANCE:<br/>6 repair-guidance steps"]:::field
+        F6["LOCAL OUTPUT:<br/>SQLite record + PDF Report"]:::field
+        
+        F1 ~~~ F2 ~~~ F3 ~~~ F4 ~~~ F5 ~~~ F6
+    end

@@ -62,6 +62,40 @@ class DigitalTwinAgent:
         except:
             pass  # Column already exists
 
+        # Add AWS Sync columns to inspections
+        for col_name, col_type in [
+            ('device_id', "TEXT"),
+            ('sync_status', "TEXT DEFAULT 'PENDING'"),
+            ('cloud_record_id', "TEXT"),
+            ('last_sync_at', "TEXT"),
+            ('sync_attempts', "INTEGER DEFAULT 0"),
+            ('last_sync_error', "TEXT"),
+            ('user_id', "INTEGER")
+        ]:
+            try:
+                self.conn.execute(f'ALTER TABLE inspections ADD COLUMN {col_name} {col_type}')
+                print(f"[DigitalTwin] Added {col_name} column to inspections ✅")
+            except:
+                pass
+
+        # Create sync_outbox table
+        self.conn.execute('''
+            CREATE TABLE IF NOT EXISTS sync_outbox (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                inspection_id   INTEGER NOT NULL,
+                payload         TEXT NOT NULL,
+                report_path     TEXT,
+                image_path      TEXT,
+                status          TEXT DEFAULT 'PENDING',
+                attempts        INTEGER DEFAULT 0,
+                last_error      TEXT,
+                created_at      TEXT,
+                updated_at      TEXT,
+                synced_at       TEXT,
+                FOREIGN KEY (inspection_id) REFERENCES inspections (id)
+            )
+        ''')
+
         # Create notifications table
         self.conn.execute('''
             CREATE TABLE IF NOT EXISTS notifications (
@@ -134,28 +168,19 @@ class DigitalTwinAgent:
         except:
             pass
 
-        try:
-            cursor = self.conn.execute('SELECT COUNT(*) FROM users')
-            if cursor.fetchone()[0] == 0:
-                self.conn.execute('''
-                    INSERT INTO users (username, password_hash, role, full_name, email, technician_id, station, phone, detection_threshold, audio_alerts, auto_refresh, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    'admin', 
-                    '$argon2id$v=19$m=65536,t=3,p=4$cUOyyYhepYDUamhodqoSdg$UmqeZgv6TmuxifaSozlCNnlF2qkiYDVWNGZw1c/h6bY', 
-                    'ADMIN',
-                    'Arjun Verma',
-                    'arjun.verma@aeroedgex.com',
-                    'Tech-07',
-                    'Hangar 3 - Turbine & Propulsion Bay',
-                    '+91 98765 43210',
-                    0.40,
-                    1,
-                    1,
-                    datetime.utcnow().isoformat() + 'Z'
-                ))
-        except:
-            pass
+        # Create sessions table
+        self.conn.execute('''
+            CREATE TABLE IF NOT EXISTS sessions (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id         INTEGER NOT NULL,
+                token_hash      TEXT NOT NULL UNIQUE,
+                created_at      TEXT,
+                last_seen_at    TEXT,
+                expires_at      TEXT,
+                revoked_at      TEXT,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
 
         self.conn.commit()
 
@@ -273,32 +298,63 @@ class DigitalTwinAgent:
         ''', (datetime.now().isoformat(), event_type, user_id, details))
         self.conn.commit()
 
-    def log_inspection(self, vision_result: dict, rag_result: dict, reasoning_result: dict = None) -> int:
+    def log_inspection(self, vision_result: dict, rag_result: dict, reasoning_result: dict = None, user_id: int = None) -> int:
+        from backend.config import get_config
+        cfg = get_config()
+        device_id = cfg.AEROEDGE_DEVICE_ID
+        
         cursor = self.conn.execute('''
             INSERT INTO inspections (
                 timestamp, image_path, defects,
                 primary_defect, severity, procedure,
-                source, page, reasoning_steps
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                source, page, reasoning_steps, device_id, sync_status, user_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             datetime.now().isoformat(),
             vision_result.get('image', ''),
             json.dumps(vision_result.get('detections', [])),
             vision_result.get('primary_defect', 'none'),
-            vision_result['detections'][0]['severity'] if vision_result['detections'] else 'none',
+            vision_result['detections'][0]['severity'] if vision_result.get('detections') else 'none',
             rag_result.get('procedure', ''),
             rag_result.get('source', ''),
             rag_result.get('page', 0),
-            json.dumps(reasoning_result.get('steps', []) if reasoning_result else [])
+            json.dumps(reasoning_result.get('steps', []) if reasoning_result else []),
+            device_id,
+            'PENDING',
+            user_id
         ))
-        self.conn.commit()
         inspection_id = cursor.lastrowid
-        print(f"[DigitalTwin] Logged inspection #{inspection_id} ✅")
+        
+        # Create a sync outbox entry
+        now_iso = datetime.now().isoformat()
+        payload = {
+            "inspection_id": f"INSP-{inspection_id:04d}",
+            "device_id": device_id,
+            "user_id": user_id,
+            "timestamp": now_iso,
+            "defect": vision_result.get('primary_defect', 'none'),
+            "confidence": float(vision_result['detections'][0]['confidence']) if vision_result.get('detections') else 0.0,
+            "severity": vision_result['detections'][0]['severity'] if vision_result.get('detections') else 'none',
+            "bbox": vision_result['detections'][0]['location'] if vision_result.get('detections') else {},
+            "model": "yolov11",
+            "model_version": "v1",
+            "inference_device": vision_result.get('inference_device', 'local_cpu'),
+            "report_key": f"reports/INSP-{inspection_id:04d}/report.pdf",
+            "image_key": f"images/INSP-{inspection_id:04d}/original.jpg"
+        }
+        
+        self.conn.execute('''
+            INSERT INTO sync_outbox (inspection_id, payload, image_path, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (inspection_id, json.dumps(payload), vision_result.get('image', ''), now_iso, now_iso))
+        
+        self.conn.commit()
+        print(f"[DigitalTwin] Logged inspection #{inspection_id} and queued for sync ✅")
         return inspection_id
 
     def get_history(self, limit: int = 10) -> list:
         cursor = self.conn.execute('''
-            SELECT id, timestamp, primary_defect, severity, source, page, image_path
+            SELECT id, timestamp, primary_defect, severity, source, page, image_path, sync_status
             FROM inspections
             ORDER BY id DESC
             LIMIT ?
@@ -317,7 +373,8 @@ class DigitalTwinAgent:
                 "source": row[4],
                 "page": row[5],
                 "image_path": image_path,
-                "annotated_image": annotated_image
+                "annotated_image": annotated_image,
+                "sync_status": row[7] if len(row) > 7 else 'PENDING'
             })
         return history
 

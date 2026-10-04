@@ -1,0 +1,15 @@
+flowchart TD
+    classDef block fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+    classDef main fill:#0000B3,stroke:#000000,stroke-width:2px,color:#FFFFFF,font-size:20px
+    classDef res fill:#12C6B3,stroke:#000000,stroke-width:2px,color:#000000,font-weight:bold
+
+    B1["Computer Vision"]:::block
+    B2["Maintenance Retrieval"]:::block
+    B3["Local LLM Reasoning"]:::block
+    B4["Technician Review"]:::block
+    B5["Inspection-State Persistence"]:::block
+    B6["Reporting"]:::block
+
+    B1 & B2 & B3 & B4 & B5 & B6 --> M["AeroEdge-X"]:::main
+    
+    M --> R["Connectivity-restricted point-of-inspection workflow"]:::res

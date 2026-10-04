@@ -29,6 +29,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import sys
 import os
+import sqlite3
 
 # Windows GUI headless fallback: if stdout/stderr are None, map to devnull BEFORE any prints!
 if sys.platform == "win32":
@@ -46,6 +47,7 @@ from backend.agents.reasoning_agent import ReasoningAgent, LocalLLMUnavailableEr
 from backend.services.report_generator import generate_report
 from backend.agents.digital_twin import DigitalTwinAgent
 import backend.agents.digital_twin as digital_twin
+from backend.services.auth import auth_bp, login_required
 
 import sys
 if not getattr(sys, 'frozen', False):
@@ -73,6 +75,8 @@ def create_app(config_name=None):
     app.config.from_object(cfg)
     app.config['UPLOAD_FOLDER'] = str(cfg.UPLOAD_DIR)
     app.config['REPORT_DIR'] = str(cfg.REPORT_DIR)
+
+    app.register_blueprint(auth_bp)
 
     # Sync active database path for DigitalTwinAgent
     os.environ['DATABASE_PATH'] = str(cfg.DATABASE_PATH)
@@ -140,11 +144,61 @@ def create_app(config_name=None):
         return response
 
     # Routes
+    @app.route('/sync/status', methods=['GET'])
+    @login_required
+    def sync_status():
+        try:
+            db_path = str(app.config.get('DATABASE_PATH', 'digital_twin.db'))
+            with sqlite3.connect(db_path, timeout=10) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute('''
+                    SELECT status, COUNT(*) as count 
+                    FROM sync_outbox 
+                    GROUP BY status
+                ''')
+                rows = cursor.fetchall()
+                
+                stats = { 'PENDING': 0, 'SYNCING': 0, 'SYNCED': 0, 'FAILED': 0 }
+                for row in rows:
+                    stats[row['status']] = row['count']
+                
+                # Determine overall state
+                if stats['SYNCING'] > 0:
+                    overall = 'SYNCING'
+                elif stats['PENDING'] > 0:
+                    overall = 'PENDING'
+                elif stats['FAILED'] > 0:
+                    overall = 'FAILED'
+                elif stats['SYNCED'] > 0:
+                    overall = 'SYNCED'
+                else:
+                    overall = 'LOCAL ONLY'
+                    
+                return jsonify({
+                    'overall_state': overall,
+                    'stats': stats
+                }), 200
+        except Exception as e:
+            return jsonify({'error': 'SYNC_DB_ERROR', 'message': str(e)}), 500
+
     @app.route('/health', methods=['GET'])
     def health():
         db_path = str(app.config.get('DATABASE_PATH', 'digital_twin.db'))
         db_ok = os.path.exists(db_path)
-        vision_ok = hasattr(vision, 'model') and vision.model is not None
+        
+        # Check Vision Agent health
+        if getattr(vision, 'jetson_url', None):
+            # Jetson mode
+            try:
+                import requests
+                resp = requests.get(f"{vision.jetson_url}/health", timeout=2)
+                vision_ok = resp.status_code == 200
+            except:
+                vision_ok = False
+        else:
+            # Local mode
+            vision_ok = hasattr(vision, 'model') and vision.model is not None
+            
         rag_ok = hasattr(rag, 'vectorstore') and rag.vectorstore is not None
         llm_ok = hasattr(reasoning, 'llm') and reasoning.llm is not None
 
@@ -172,6 +226,7 @@ def create_app(config_name=None):
             })
 
     @app.route('/analyze', methods=['POST'])
+    @login_required
     def analyze():
         # 1. Validate file
         if 'image' not in request.files:
@@ -195,7 +250,13 @@ def create_app(config_name=None):
             threshold = float(request.form.get('threshold', app.config.get('VISION_CONFIDENCE_THRESHOLD', 0.4)))
         except (ValueError, TypeError):
             threshold = 0.4
-        vision_result = vision.detect(filepath, threshold=threshold)
+        try:
+            vision_result = vision.detect(filepath, threshold=threshold)
+        except Exception as e:
+            return jsonify({
+                'error': 'VISION_AGENT_UNAVAILABLE',
+                'message': f"Vision Agent failed: {str(e)}"
+            }), 503
 
         # 4. RAG Agent
         if vision_result['status'] == 'defect_found':
@@ -230,7 +291,7 @@ def create_app(config_name=None):
 
         # 6. Digital Twin
         twin = DigitalTwinAgent()
-        inspection_id = twin.log_inspection(vision_result, rag_result, reasoning_result)
+        inspection_id = twin.log_inspection(vision_result, rag_result, reasoning_result, getattr(g, 'user', {}).get('id'))
 
         # Generate notification if defect found
         if vision_result['status'] == 'defect_found':
@@ -275,6 +336,7 @@ def create_app(config_name=None):
         return send_from_directory(upload_folder, sanitized)
 
     @app.route('/history')
+    @login_required
     def history():
         twin = DigitalTwinAgent()
         try:
@@ -284,6 +346,7 @@ def create_app(config_name=None):
         return jsonify(twin.get_history(limit=limit))
 
     @app.route('/search')
+    @login_required
     def search():
         twin = DigitalTwinAgent()
         query = request.args.get('q', '')
@@ -340,10 +403,17 @@ def create_app(config_name=None):
         twin = DigitalTwinAgent()
         metrics = twin.get_db_metrics()
 
-        vision_loaded = hasattr(vision, 'model') and vision.model is not None
-        classes_count = len(vision.model.names) if vision_loaded and hasattr(vision.model, 'names') else 0
-        weights_path = str(app.config.get('MODEL_PATH', 'best.pt'))
-        weights_size_mb = round(os.path.getsize(weights_path) / (1024 * 1024), 2) if os.path.exists(weights_path) else 0
+        if getattr(vision, 'jetson_url', None):
+            vision_loaded = True
+            classes_count = len(vision.names) if hasattr(vision, 'names') else 0
+            weights_size_mb = "N/A (Jetson)"
+            vision_device = f"Jetson Edge ({vision.jetson_url})"
+        else:
+            vision_loaded = hasattr(vision, 'model') and vision.model is not None
+            classes_count = len(vision.names) if vision_loaded and hasattr(vision, 'names') else 0
+            weights_path = str(app.config.get('MODEL_PATH', 'best.pt'))
+            weights_size_mb = round(os.path.getsize(weights_path) / (1024 * 1024), 2) if os.path.exists(weights_path) else 0
+            vision_device = "CPU / PyTorch (Local)"
 
         rag_chunks = 0
         try:
@@ -374,7 +444,7 @@ def create_app(config_name=None):
                     'status': 'Online' if vision_loaded else 'Offline',
                     'classes': classes_count,
                     'weights_mb': weights_size_mb,
-                    'device': 'CPU / PyTorch'
+                    'device': vision_device
                 },
                 'rag': {
                     'name': 'Manuals & RAG Index',
@@ -411,6 +481,7 @@ def create_app(config_name=None):
             return jsonify({'message': 'Digital Twin Page', 'status': 'available'})
 
     @app.route('/report/<int:inspection_id>')
+    @login_required
     def download_report(inspection_id):
         import json
 
@@ -455,6 +526,7 @@ def create_app(config_name=None):
                          download_name=f'AeroEdge_Inspection_{inspection_id}.pdf')
 
     @app.route('/report/<int:inspection_id>/csv')
+    @login_required
     def download_csv(inspection_id):
         import json
         from io import StringIO
@@ -546,4 +618,13 @@ if __name__ == '__main__':
 
     port = args.port
     print(f"🚀 Starting AeroEdge-X on http://{args.host}:{port}")
+    
+    # Start AWS Background Synchronization Worker
+    try:
+        from backend.agents.digital_twin import DigitalTwinAgent
+        DigitalTwinAgent() # Ensure tables are migrated before worker starts
+        from backend.services.aws_sync import sync_worker
+        sync_worker.start()
+    except Exception as e:
+        print(f"Failed to start AWS Sync Worker: {e}")
     app.run(host=args.host, port=port, threaded=True, load_dotenv=False)

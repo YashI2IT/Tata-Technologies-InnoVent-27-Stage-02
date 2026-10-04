@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AeroEdge-X AWS Cloud Synchronization Infrastructure'
+
+Resources:
+  AeroEdgeS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  AeroEdgeDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AeroEdge-Inspections
+      AttributeDefinitions:
+        - AttributeName: inspection_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: inspection_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+
+  SyncLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AeroEdgeSyncPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: !GetAtt AeroEdgeDynamoDBTable.Arn
+
+  SyncLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: aeroedge-sync-handler
+      Runtime: python3.10
+      Handler: sync_handler.lambda_handler
+      Role: !GetAtt SyncLambdaExecutionRole.Arn
+      Code:
+        S3Bucket: your-deployment-bucket # To be updated during deployment
+        S3Key: lambda.zip
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref AeroEdgeDynamoDBTable
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: AeroEdgeSyncAPI
+      ProtocolType: HTTP
+
+  HttpApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt SyncLambdaFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  HttpApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "POST /sync/inspection"
+      AuthorizationType: AWS_IAM
+      Target: !Join ["/", ["integrations", !Ref HttpApiIntegration]]
+
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: $default
+      AutoDeploy: true
+
+  LambdaApiGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SyncLambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/sync/inspection"
+
+  EdgeDeviceUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: AeroEdge-Jetson-Agent
+
+  EdgeDeviceAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AeroEdgeDeviceSyncPolicy
+      Users:
+        - !Ref EdgeDeviceUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub "${AeroEdgeS3Bucket.Arn}/*"
+          - Effect: Allow
+            Action:
+              - execute-api:Invoke
+            Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/sync/inspection"
+
+Outputs:
+  BucketName:
+    Value: !Ref AeroEdgeS3Bucket
+  DynamoTableName:
+    Value: !Ref AeroEdgeDynamoDBTable
+  ApiEndpoint:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/sync/inspection"

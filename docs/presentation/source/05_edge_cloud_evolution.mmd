@@ -1,0 +1,18 @@
+flowchart LR
+    classDef current fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+    classDef planned fill:#FFFFFF,stroke:#FF9C00,stroke-width:2px,stroke-dasharray: 5 5,color:#000000
+    
+    subgraph Z1 ["1. CURRENT VERIFIED"]
+        A["Desktop Application<br/>Local AI Pipeline"]:::current
+    end
+    
+    subgraph Z2 ["2. NEXT IMPLEMENTATION"]
+        B["Jetson Orin Nano<br/>Industrial Camera<br/>ONNX / TensorRT"]:::planned
+    end
+    
+    subgraph Z3 ["3. TARGET CLOUD"]
+        C["Offline Sync Outbox<br/>AWS DynamoDB<br/>AWS S3"]:::planned
+    end
+    
+    Z1 ==>|Evolution| Z2
+    Z2 ==>|Cloud Integration| Z3

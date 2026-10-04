@@ -1,0 +1,21 @@
+flowchart TD
+    classDef ev fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+    classDef act fill:#0000B3,stroke:#000000,stroke-width:2px,color:#FFFFFF
+
+    subgraph SE ["INSPECTION EVIDENCE"]
+        direction TB
+        E1["Image"]:::ev --> E2["Defect"]:::ev --> E3["Bounding Box"]:::ev --> E4["Confidence"]:::ev --> E5["Severity"]:::ev
+    end
+
+    subgraph SM ["MAINTENANCE EVIDENCE"]
+        direction TB
+        M1["Manual"]:::ev --> M2["Retrieved Context"]:::ev --> M3["Source"]:::ev --> M4["Page"]:::ev
+    end
+
+    SE --> LLM["Phi-3 Mini"]:::act
+    SM --> LLM
+
+    LLM --> G["Grounded Guidance"]:::ev
+    G --> R["Technician Review"]:::act
+    R --> S["SQLite"]:::ev
+    S --> P["PDF"]:::ev

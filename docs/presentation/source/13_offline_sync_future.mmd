@@ -1,0 +1,18 @@
+flowchart TD
+    classDef planned fill:#FFFFFF,stroke:#FF9C00,stroke-width:2px,stroke-dasharray: 5 5,color:#000000
+    classDef decision fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+
+    A["Inspection Complete"]:::planned --> B["Local Record (SQLite)"]:::planned
+    B --> C["PENDING Status"]:::planned
+    C --> D{{"Connectivity Available?"}}:::decision
+    
+    D -->|NO| E["Keep Local & Retry"]:::planned
+    D -->|YES| F["Sync"]:::planned
+    
+    F --> G["AWS DynamoDB / S3"]:::planned
+    G --> H["Cloud ACK"]:::planned
+    H --> I["SYNCED Status"]:::planned
+    
+    subgraph PLANNED ["PLANNED ARCHITECTURE (NEXT STAGE)"]
+        A
+    end

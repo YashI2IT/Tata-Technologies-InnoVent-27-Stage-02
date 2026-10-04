@@ -1,0 +1,17 @@
+flowchart LR
+    classDef step fill:#0000B3,stroke:#000000,stroke-width:2px,color:#FFFFFF
+    classDef tech fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+    classDef info fill:#12C6B3,stroke:#000000,stroke-width:2px,color:#000000
+
+    C["CAPTURE"]:::step --> D["DETECT"]:::step --> R1["RETRIEVE"]:::step --> R2["REASON"]:::step --> R3["REVIEW"]:::step --> R4["RECORD"]:::step --> R5["REPORT"]:::step
+    
+    C --- CT["Camera / Image"]:::tech
+    D --- DT["YOLOv11 + OpenCV"]:::tech
+    R1 --- RT["ChromaDB"]:::tech
+    R2 --- R2T["Phi-3 Mini"]:::tech
+    R3 --- R3T["Technician UI"]:::tech
+    R4 --- R4T["SQLite"]:::tech
+    R5 --- R5T["ReportLab PDF"]:::tech
+
+    I["OFFLINE-FIRST PRINCIPLE:<br/>Inference local.<br/>Evidence local.<br/>State local.<br/>Synchronize later."]:::info
+    R3 -.-> I

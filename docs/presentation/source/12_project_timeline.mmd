@@ -1,0 +1,12 @@
+flowchart LR
+    classDef comp fill:#12C6B3,stroke:#000000,stroke-width:2px,color:#000000
+    classDef next fill:#FF9C00,stroke:#000000,stroke-width:2px,color:#000000
+    classDef tgt fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+
+    S1["COMPLETED<br/>Stage 1:<br/>Core software POC<br/>(YOLO, RAG, LLM)"]:::comp
+    S2["COMPLETED<br/>Stage 2:<br/>Desktop Packaging<br/>(Electron, UI, Installer)"]:::comp
+    S3["NEXT<br/>Stage 3:<br/>Jetson + Camera<br/>ONNX / Sync"]:::next
+    S4["REMAINING<br/>Validation:<br/>Offline/Online Testing<br/>Thermal Profiling"]:::next
+    S5["TARGET<br/>Jan 2027<br/>End-to-End Prototype"]:::tgt
+
+    S1 ==> S2 ==> S3 ==> S4 ==> S5

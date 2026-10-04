@@ -68,8 +68,15 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutM
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    const token = localStorage.getItem('token');
+    const headers = new Headers(options.headers || {});
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
     const response = await fetch(url, {
       ...options,
+      headers,
       signal: options.signal || controller.signal,
     });
     return response;
@@ -420,6 +427,38 @@ export const api = {
     const response = await fetchWithTimeout(`${getApiBaseUrl()}/system/diagnostics`);
     if (!response.ok) throw new Error('Failed to fetch system diagnostics');
     return response.json();
+  },
+
+  getSyncStatus: async (): Promise<any> => {
+    if (isDemoMode()) {
+      return { overall_state: 'SYNCED', stats: { PENDING: 0, SYNCING: 0, SYNCED: 42, FAILED: 0 } };
+    }
+    const response = await fetchWithTimeout(`${getApiBaseUrl()}/sync/status`);
+    if (!response.ok) throw new Error('Failed to fetch sync status');
+    return response.json();
+  },
+
+  get: async (endpoint: string, options: any = {}) => {
+    const response = await fetchWithTimeout(`${getApiBaseUrl()}${endpoint}`, options);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw { response: { status: response.status, data } };
+    return { data };
+  },
+
+  post: async (endpoint: string, payload?: any, options: any = {}) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    };
+    const response = await fetchWithTimeout(`${getApiBaseUrl()}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: payload ? JSON.stringify(payload) : undefined,
+      ...options
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw { response: { status: response.status, data } };
+    return { data };
   }
 };
 

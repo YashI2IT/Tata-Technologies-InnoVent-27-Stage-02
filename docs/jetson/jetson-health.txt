@@ -1,0 +1,9 @@
+[EXPECTED OUTPUT - HARDWARE VALIDATION PENDING]
+
+$ curl http://localhost:8000/health
+{
+  "status": "ok",
+  "device": "jetson",
+  "accelerator": "tensorrt",
+  "model": "yolov11"
+}

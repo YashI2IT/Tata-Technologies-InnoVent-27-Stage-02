@@ -1,0 +1,9 @@
+[EXPECTED OUTPUT - HARDWARE VALIDATION PENDING]
+
+$ python camera_test.py --camera 0 --engine best.engine
+
+Initializing inference service...
+Loading TensorRT Engine: best.engine
+Opening camera /dev/video0...
+Camera opened successfully. Press 'q' to quit.
+Processed 345 frames in 11.5 seconds.

@@ -1,0 +1,11 @@
+flowchart LR
+    classDef node fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+    classDef tech fill:#0000B3,stroke:#000000,stroke-width:1px,color:#FFFFFF,font-size:12px
+
+    A["Aircraft"]:::node --> B["Image"]:::node
+    B -->|YOLOv11| C["Detection<br/>Metadata"]:::node
+    C -->|ChromaDB| D["Maintenance<br/>Context"]:::node
+    D -->|Phi-3 Mini| E["Grounded<br/>Guidance"]:::node
+    E -->|React UI| F["Technician<br/>Review"]:::node
+    F -->|SQLite| G["Inspection<br/>Record"]:::node
+    G -->|ReportLab| H["PDF<br/>Report"]:::node

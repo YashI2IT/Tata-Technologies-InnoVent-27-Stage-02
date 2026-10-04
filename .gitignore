@@ -35,6 +35,7 @@ htmlcov/
 tests/fixtures/test_digital_twin.db*
 tests/fixtures/uploads/*
 tests/fixtures/reports/*
+test_data/
 !tests/fixtures/.gitkeep
 
 # Node / Frontend

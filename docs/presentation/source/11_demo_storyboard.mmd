@@ -1,0 +1,11 @@
+flowchart LR
+    classDef thumb fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000,width:180px,height:120px
+    classDef arr fill:none,stroke:none
+
+    T1["01<br/>Inspection Setup"]:::thumb --> T2["02<br/>Image Upload"]:::thumb
+    T2 --> T3["03<br/>Detection"]:::thumb
+    T3 --> T4["04<br/>Retrieval"]:::thumb
+    T4 --> T5["05<br/>Recommendation"]:::thumb
+    T5 --> T6["06<br/>Review"]:::thumb
+    T6 --> T7["07<br/>Record"]:::thumb
+    T7 --> T8["08<br/>Report"]:::thumb

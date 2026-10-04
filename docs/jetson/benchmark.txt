@@ -1,0 +1,28 @@
+[EXPECTED OUTPUT - HARDWARE VALIDATION PENDING]
+
+$ python benchmark.py --image sample.jpg --iter 100 --engine best.engine
+
+==================================================
+AEROEDGE-X JETSON INFERENCE BENCHMARK
+==================================================
+Platform: Linux-5.10.104-tegra-aarch64-with-glibc2.31
+Initializing inference service...
+Loading TensorRT Engine: best.engine
+Model Load & Warm-up Time: 2450.0 ms
+Accelerator used: TensorRT
+
+Running 100 iterations on sample.jpg...
+
+==================================================
+BENCHMARK RESULTS
+==================================================
+Jetpack Version: (Run 'cat /etc/nv_tegra_release' to verify)
+Model: YOLOv11 TensorRT FP16
+Iterations: 100
+--------------------------------------------------
+Average Inference Time: 9.45 ms
+Median Inference Time:  9.30 ms
+Minimum Inference Time: 9.10 ms
+Maximum Inference Time: 11.20 ms
+Implied Max FPS:        105.82 FPS
+==================================================

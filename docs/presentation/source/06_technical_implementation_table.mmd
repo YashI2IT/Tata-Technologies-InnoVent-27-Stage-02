@@ -1,0 +1,49 @@
+flowchart TD
+    classDef header fill:#0000B3,stroke:#000000,stroke-width:2px,color:#FFFFFF,font-weight:bold
+    classDef cell_cur fill:#EAF4FF,stroke:#0000B3,stroke-width:1px,color:#000000
+    classDef cell_next fill:#FFFFFF,stroke:#FF9C00,stroke-width:1px,stroke-dasharray: 3 3,color:#000000
+
+    subgraph TABLE ["Technical Implementation Table"]
+        direction LR
+        
+        subgraph LAYER ["Layer"]
+            direction TB
+            H1["Layer"]:::header
+            L1["Desktop"]:::cell_cur
+            L2["Vision"]:::cell_cur
+            L3["Knowledge"]:::cell_cur
+            L4["Reasoning"]:::cell_cur
+            L5["Persistence"]:::cell_cur
+            L6["Reporting"]:::cell_cur
+            L7["Edge"]:::cell_cur
+            L8["Cloud"]:::cell_cur
+        end
+        
+        subgraph CURRENT ["Current POC (Verified)"]
+            direction TB
+            H2["Current POC"]:::header
+            C1["Electron + React"]:::cell_cur
+            C2["YOLOv11 + OpenCV"]:::cell_cur
+            C3["ChromaDB + all-MiniLM-L6-v2"]:::cell_cur
+            C4["Phi-3 Mini + Ollama"]:::cell_cur
+            C5["SQLite + local files"]:::cell_cur
+            C6["ReportLab PDF"]:::cell_cur
+            C7["---"]:::cell_cur
+            C8["---"]:::cell_cur
+        end
+        
+        subgraph NEXT ["Next (Planned)"]
+            direction TB
+            H3["Next"]:::header
+            N1["---"]:::cell_next
+            N2["ONNX / TensorRT"]:::cell_next
+            N3["---"]:::cell_next
+            N4["Edge optimization"]:::cell_next
+            N5["Offline sync outbox"]:::cell_next
+            N6["---"]:::cell_next
+            N7["Jetson Orin Nano + Camera"]:::cell_next
+            N8["DynamoDB + S3"]:::cell_next
+        end
+        
+        LAYER ~~~ CURRENT ~~~ NEXT
+    end

@@ -1,0 +1,29 @@
+flowchart TD
+    classDef header fill:#0000B3,stroke:#000000,stroke-width:2px,color:#FFFFFF,font-weight:bold
+    classDef row fill:#EAF4FF,stroke:#0000B3,stroke-width:1px,color:#000000
+
+    subgraph MATRIX ["Engineering Challenges"]
+        direction LR
+        
+        subgraph C ["Challenge"]
+            direction TB
+            H1["Challenge"]:::header
+            R1A["Grounding"]:::row
+            R2A["Agent Handoff"]:::row
+            R3A["Offline Operation"]:::row
+            R4A["Edge Migration"]:::row
+            R5A["Traceable Reporting"]:::row
+        end
+        
+        subgraph E ["Engineering Response"]
+            direction TB
+            H2["Engineering Response"]:::header
+            R1B["Local retrieval + source/page context"]:::row
+            R2B["Structured inspection data between stages"]:::row
+            R3B["Local inference + local retrieval + SQLite"]:::row
+            R4B["Hardware-independent POC before Jetson"]:::row
+            R5B["Structured inspection record + PDF"]:::row
+        end
+        
+        C ~~~ E
+    end

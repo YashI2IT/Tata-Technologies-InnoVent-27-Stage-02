@@ -1,0 +1,44 @@
+[EXPECTED OUTPUT - HARDWARE VALIDATION PENDING]
+
+$ python test_inference.py --image sample.jpg --engine best.engine
+
+Initializing inference service...
+Loading TensorRT Engine: best.engine
+Model warm-up complete.
+Running inference on sample.jpg...
+
+--- Run 1 ---
+Total Request Time: 21.5 ms
+Inference Time: 12.0 ms
+
+--- Run 2 ---
+Total Request Time: 18.2 ms
+Inference Time: 9.5 ms
+
+--- Run 3 ---
+Total Request Time: 17.9 ms
+Inference Time: 9.3 ms
+
+Final Output JSON Schema:
+{
+  "device": "jetson",
+  "accelerator": "tensorrt",
+  "model": "yolov11",
+  "inference_time_ms": 9.3,
+  "primary_defect": "crack",
+  "total_detections": 1,
+  "detections": [
+    {
+      "defect_type": "crack",
+      "confidence": 0.89,
+      "severity": "high",
+      "location": {
+        "x_center": 0.5,
+        "y_center": 0.5,
+        "width": 0.1,
+        "height": 0.1
+      }
+    }
+  ],
+  "status": "defect_found"
+}

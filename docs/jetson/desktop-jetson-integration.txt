@@ -1,0 +1,26 @@
+[EXPECTED OUTPUT - HARDWARE VALIDATION PENDING]
+
+Desktop Config:
+VISION_AGENT_MODE=jetson
+JETSON_URL=http://192.168.1.100:8000
+
+# 1. Desktop triggers analysis
+POST http://127.0.0.1:7860/analyze (multipart/form-data)
+
+# 2. Desktop forwards to Jetson
+POST http://192.168.1.100:8000/infer
+Response: 200 OK
+{
+  "device": "jetson",
+  "accelerator": "tensorrt",
+  "detections": [...]
+}
+
+# 3. Desktop continues RAG & Phi-3 locally
+Local LLM generate() called.
+
+# 4. Desktop saves to SQLite
+Logged inspection #101
+
+# 5. Desktop returns to frontend
+200 OK (inspection_id: 101)

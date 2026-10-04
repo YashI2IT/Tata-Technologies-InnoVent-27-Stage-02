@@ -46,10 +46,21 @@ class BaseConfig:
     PORT = int(os.environ.get("AEROEDGE_PORT", os.environ.get("PORT", 7860)))
 
     # AI Models
+    VISION_AGENT_MODE = os.environ.get("VISION_AGENT_MODE", "local")
+    JETSON_URL = os.environ.get("JETSON_URL", "http://127.0.0.1:8000")
+    JETSON_TIMEOUT_SECONDS = int(os.environ.get("JETSON_TIMEOUT_SECONDS", 30))
     VISION_CONFIDENCE_THRESHOLD = float(os.environ.get("VISION_CONFIDENCE_THRESHOLD", 0.40))
     LLM_MODEL = os.environ.get("LLM_MODEL", "phi3:mini")
     OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
     LLM_TIMEOUT_SECONDS = int(os.environ.get("LLM_TIMEOUT_SECONDS", 60))
+
+    # AWS Cloud Sync
+    AEROEDGE_DEVICE_ID = os.environ.get("AEROEDGE_DEVICE_ID", "AEROEDGE-DESKTOP-001")
+    AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+    AWS_API_URL = os.environ.get("AWS_API_URL", "")
+    AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "")
+    AWS_DYNAMODB_TABLE = os.environ.get("AWS_DYNAMODB_TABLE", "AeroEdge-Inspections")
+    AWS_SYNC_INTERVAL_SECONDS = int(os.environ.get("AWS_SYNC_INTERVAL_SECONDS", 30))
 
     # Security & Sessions
     SECRET_KEY = os.environ.get("SECRET_KEY", "aeroedge_x_dev_insecure_local_secret_key_99214")

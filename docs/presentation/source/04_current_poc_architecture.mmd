@@ -1,0 +1,29 @@
+flowchart TD
+    classDef current fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+    classDef verified fill:#12C6B3,stroke:#000000,stroke-width:2px,color:#000000
+
+    subgraph ZONE_A ["ZONE A: CURRENT VERIFIED POC"]
+        direction TB
+        E["Electron Desktop"]:::current
+        R["React UI"]:::current
+        F["Flask REST API"]:::current
+        
+        subgraph AI ["AI Workflow (Local)"]
+            direction TB
+            V["OpenCV + YOLOv11"]:::current
+            K["ChromaDB + all-MiniLM-L6-v2"]:::current
+            L["Phi-3 Mini + Ollama"]:::current
+        end
+        
+        S["SQLite Database"]:::current
+        A["Local Images / Artifacts"]:::current
+        P["ReportLab PDF Generation"]:::current
+        
+        E --> R --> F --> AI
+        AI --> S
+        S --> A
+        A --> P
+    end
+    
+    L1["CURRENT / VERIFIED"]:::verified
+    ZONE_A -.-> L1

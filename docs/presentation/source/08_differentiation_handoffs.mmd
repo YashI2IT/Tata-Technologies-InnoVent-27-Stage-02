@@ -1,0 +1,21 @@
+flowchart LR
+    classDef stage fill:#0000B3,stroke:#000000,stroke-width:2px,color:#FFFFFF
+    classDef act fill:#EAF4FF,stroke:#0000B3,stroke-width:2px,color:#000000
+
+    S1["Inspection<br/>↓<br/>Evidence"]:::stage
+    A1["YOLOv11 converts<br/>imagery into<br/>defect evidence"]:::act
+    S1 --- A1
+
+    S2["Evidence<br/>↓<br/>Context"]:::stage
+    A2["Detected finding<br/>supports local<br/>manual retrieval"]:::act
+    S2 --- A2
+
+    S3["Context<br/>↓<br/>Guidance"]:::stage
+    A3["Phi-3 Mini<br/>receives retrieved<br/>maintenance context"]:::act
+    S3 --- A3
+
+    S4["Guidance<br/>↓<br/>Record"]:::stage
+    A4["Technician review,<br/>SQLite state,<br/>PDF report retained"]:::act
+    S4 --- A4
+
+    S1 --> S2 --> S3 --> S4

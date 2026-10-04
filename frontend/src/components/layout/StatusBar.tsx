@@ -7,6 +7,7 @@ export function StatusBar() {
  const [backendReady, setBackendReady] = useState(false);
  const [executionMode, setExecutionMode] = useState<'LOCAL' | 'JETSON'>('LOCAL');
  const [jetsonStatus, setJetsonStatus] = useState<string>('LOCAL ACTIVE');
+ const [syncStatus, setSyncStatus] = useState<any>({ overall_state: 'LOCAL ONLY', stats: {} });
 
  useEffect(() => {
  // Listen for browser online/offline
@@ -36,6 +37,10 @@ export function StatusBar() {
  try {
  const isHealthy = await api.healthCheck();
  setBackendReady(isHealthy);
+ if (isHealthy) {
+   const syncRes = await api.getSyncStatus();
+   setSyncStatus(syncRes);
+ }
  } catch (e) {
  setBackendReady(false);
  }
@@ -84,8 +89,12 @@ export function StatusBar() {
  <AgentStatus name="SQLite" status={backendReady ? "Connected" : "Disconnected"} sub="Local Database" isReady={backendReady} />
  <AgentStatus name="YOLOv11" status={backendReady ? "Loaded" : "Offline"} sub="Model Ready" isReady={backendReady} />
  <AgentStatus name="PHI-3 MINI" status={backendReady ? "Ready" : "Offline"} sub="LLM Ready" isReady={backendReady} />
- <AgentStatus name="CHROMADB" status={backendReady ? "Connected" : "Disconnected"} sub="Vector DB Ready" isReady={backendReady} />
- <AgentStatus name="LANGCHAIN" status={backendReady ? "Active" : "Inactive"} sub="Agents Running" isReady={backendReady} />
+ <AgentStatus 
+   name="AWS SYNC" 
+   status={syncStatus.overall_state} 
+   sub={`Pending: ${syncStatus.stats?.PENDING || 0}`} 
+   isReady={syncStatus.overall_state === 'SYNCED' || syncStatus.overall_state === 'LOCAL ONLY'} 
+ />
  </div>
 
  </footer>
