@@ -10,13 +10,7 @@ cfg = get_config()
 MANUALS_FOLDER = str(cfg.MANUALS_DIR)
 CHROMA_DB_PATH = str(cfg.CHROMA_DIR)
 
-EMBEDDING_MODEL_PATH = os.path.join(str(cfg.RESOURCE_DIR), "models", "all-MiniLM-L6-v2")
-
-if not os.path.exists(EMBEDDING_MODEL_PATH):
-    raise RuntimeError(f"MODEL MISSING:\nall-MiniLM-L6-v2\n\nMODEL EXPECTED LOCATION:\n{EMBEDDING_MODEL_PATH}")
-
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
+EMBEDDING_MODEL_PATH = "sentence-transformers/all-MiniLM-L6-v2"
 
 EMBEDDINGS = HuggingFaceEmbeddings(
     model_name=EMBEDDING_MODEL_PATH
