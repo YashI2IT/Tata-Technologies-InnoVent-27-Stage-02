@@ -5,9 +5,10 @@ import { RefreshCw } from 'lucide-react';
 
 interface ProtectedRouteProps {
   allowedRoles?: string[];
+  children?: React.ReactNode;
 }
 
-export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
+export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -27,5 +28,5 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  return children ? <>{children}</> : <Outlet />;
 }

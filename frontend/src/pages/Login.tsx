@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
-import api from '../services/api';
+import { api } from '../services/api';
 
 export function Login() {
   const [isSetup, setIsSetup] = useState(false);
