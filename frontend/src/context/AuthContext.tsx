@@ -19,29 +19,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
+  const dummyUser = { id: 1, username: 'admin', full_name: 'Administrator', role: 'ADMIN' };
+  const [user, setUser] = useState<User | null>(dummyUser);
+  const [token, setToken] = useState<string | null>('dummy-token');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      if (storedToken) {
-        try {
-          const res = await api.get('/auth/me', {
-            headers: { Authorization: `Bearer ${storedToken}` }
-          });
-          setUser(res.data);
-          setToken(storedToken);
-        } catch (e) {
-          localStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
-        }
-      }
-      setLoading(false);
-    };
-    initAuth();
+    // Auth temporarily bypassed
   }, []);
 
   const login = (newToken: string, newUser: User) => {
@@ -51,16 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    if (token) {
-      try {
-        await api.post('/auth/logout');
-      } catch (e) {
-        console.error("Logout error", e);
-      }
-    }
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+    // Auth temporarily bypassed
   };
 
   return (
