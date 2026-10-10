@@ -296,9 +296,6 @@ Tata_Innovent/
 - [ ] Industrial camera integration
 - [ ] ONNX / TensorRT model optimization
 - [ ] Hardware validation testing
-
-### Stage 04 (Planned) — Cloud Integration
-
 - [ ] Offline synchronization queue
 - [ ] AWS DynamoDB integration
 - [ ] AWS S3 storage
