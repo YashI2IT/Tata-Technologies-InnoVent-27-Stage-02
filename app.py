@@ -763,8 +763,26 @@ if __name__ == '__main__':
     if GRADIO_ENABLED and gradio_demo is not None:
         print(f"🚀 Launching Gradio + REST API server on http://{args.host}:{port}")
         gradio_demo.launch(server_name=args.host, server_port=port, prevent_thread_lock=True)
-        gradio_demo.server_app.mount("/api", WSGIMiddleware(app))
-        gradio_demo.server_app.mount("/", WSGIMiddleware(app))
+
+        class AeroEdgeDispatcher:
+            def __init__(self, original_app, wsgi_app):
+                self.original_app = original_app
+                self.wsgi_app = wsgi_app
+                self.prefixes = (
+                    '/health', '/analyze', '/history', '/search',
+                    '/sync', '/system', '/report', '/uploads',
+                    '/notifications', '/api', '/digital-twin'
+                )
+
+            async def __call__(self, scope, receive, send):
+                if scope['type'] == 'http':
+                    path = scope.get('path', '')
+                    if any(path == p or path.startswith(p + '/') for p in self.prefixes):
+                        return await self.wsgi_app(scope, receive, send)
+                return await self.original_app(scope, receive, send)
+
+        wsgi = WSGIMiddleware(app)
+        gradio_demo.server_app.middleware_stack = AeroEdgeDispatcher(gradio_demo.server_app.middleware_stack, wsgi)
         print("✅ AeroEdge-X Cloud AI Backend & REST API successfully mounted and running!")
         gradio_demo.block_thread()
     else:
