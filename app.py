@@ -839,13 +839,11 @@ if __name__ == '__main__':
                         return await self.wsgi_app(new_scope, receive, send)
                 return await self.original_app(scope, receive, send)
 
-        from gradio.routes import App
-        from starlette.middleware.cors import CORSMiddleware
-        custom_app = App()
-        custom_app.add_middleware(DispatchMiddleware, wsgi_app=wsgi)
-        custom_app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
-
-        gradio_demo.launch(_app=custom_app, server_name=args.host, server_port=port, prevent_thread_lock=True)
+        gradio_demo.launch(server_name=args.host, server_port=port, prevent_thread_lock=True)
+        gradio_demo.server_app.middleware_stack = DispatchMiddleware(gradio_demo.server_app.middleware_stack, wsgi)
+        gradio_demo.server_app.mount("/api", wsgi)
+        gradio_demo.server_app.mount("/v1", wsgi)
+        gradio_demo.server_app.mount("/api_v1", wsgi)
         print("✅ AeroEdge-X Cloud AI Backend & REST API successfully mounted with DispatchMiddleware and running!")
         gradio_demo.block_thread()
     else:
