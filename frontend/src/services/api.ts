@@ -10,8 +10,11 @@ export const isDemoMode = (): boolean => {
 };
 
 let rawBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7860').replace(/\/+$/, '');
-if (rawBase.includes('.hf.space') && !rawBase.endsWith('/api')) {
-  rawBase = `${rawBase}/api`;
+if (rawBase.includes('.hf.space')) {
+  rawBase = rawBase.replace(/\/api$/, '');
+  if (!rawBase.endsWith('/v1')) {
+    rawBase = `${rawBase}/v1`;
+  }
 }
 let currentApiBaseUrl = rawBase;
 
@@ -19,8 +22,11 @@ export const getApiBaseUrl = () => currentApiBaseUrl;
 
 export const setApiBaseUrl = (url: string) => {
   let cleaned = url.replace(/\/+$/, '');
-  if (cleaned.includes('.hf.space') && !cleaned.endsWith('/api')) {
-    cleaned = `${cleaned}/api`;
+  if (cleaned.includes('.hf.space')) {
+    cleaned = cleaned.replace(/\/api$/, '');
+    if (!cleaned.endsWith('/v1')) {
+      cleaned = `${cleaned}/v1`;
+    }
   }
   currentApiBaseUrl = cleaned;
 };

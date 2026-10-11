@@ -107,8 +107,8 @@ def create_app(config_name=None):
     os.environ['DATABASE_PATH'] = str(cfg.DATABASE_PATH)
     digital_twin.DB_PATH = str(cfg.DATABASE_PATH)
 
-    # Configure CORS for credentialed requests
-    CORS(app, supports_credentials=True, origins=cfg.FRONTEND_ORIGINS)
+    # Configure CORS for credentialed and cloud requests
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
     # Register blueprints
     # Blueprint removed
@@ -765,9 +765,10 @@ if __name__ == '__main__':
         from gradio.routes import App
         custom_app = App()
         wsgi = WSGIMiddleware(app)
-        custom_app.mount("/api", wsgi)
+        custom_app.mount("/v1", wsgi)
+        custom_app.mount("/api_v1", wsgi)
         gradio_demo.launch(_app=custom_app, server_name=args.host, server_port=port, prevent_thread_lock=True)
-        print("✅ AeroEdge-X Cloud AI Backend & REST API successfully mounted on /api and running!")
+        print("✅ AeroEdge-X Cloud AI Backend & REST API successfully mounted on /v1 and running!")
         gradio_demo.block_thread()
     else:
         app.run(host=args.host, port=port, threaded=True, load_dotenv=False)
