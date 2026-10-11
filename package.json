@@ -1,0 +1,10 @@
+{
+  "name": "aeroedge-x",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AeroEdge-X: Agentic Edge AI for Digital Twin-Enabled Aerospace MRO",
+  "scripts": {
+    "build": "npm --prefix frontend run build:web",
+    "build:web": "npm --prefix frontend run build:web"
+  }
+}

@@ -1,5 +1,6 @@
 {
-  "buildCommand": "[ -d \"frontend\" ] && (cd frontend && npm run build:web) || npm run build:web",
+  "installCommand": "npm --prefix frontend install",
+  "buildCommand": "npm --prefix frontend run build:web",
   "outputDirectory": "frontend/dist",
   "framework": "vite",
   "rewrites": [
