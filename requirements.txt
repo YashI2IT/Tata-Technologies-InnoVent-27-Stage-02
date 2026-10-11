@@ -33,7 +33,7 @@ requests>=2.31.0
 
 # Hugging Face Spaces & ASGI Bridge
 a2wsgi>=1.10.0
-gradio>=4.0.0
+gradio>=5.0.0,<6.0.0
 fastapi>=0.100.0
 uvicorn>=0.20.0
 
