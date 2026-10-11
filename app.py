@@ -63,6 +63,18 @@ rag = RAGAgent()
 reasoning = ReasoningAgent()
 print("✅ All agents ready!")
 
+# ZeroGPU Support for Hugging Face Spaces
+try:
+    import spaces
+    @spaces.GPU
+    def detect_defect_gpu(filepath, threshold=0.4):
+        return vision.detect(filepath, threshold=threshold)
+except Exception:
+    def detect_defect_gpu(filepath, threshold=0.4):
+        return vision.detect(filepath, threshold=threshold)
+
+
+
 def allowed_file(filename: str, allowed_extensions: set) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
@@ -263,8 +275,9 @@ def create_app(config_name=None):
         except (ValueError, TypeError):
             threshold = 0.4
         try:
-            vision_result = vision.detect(filepath, threshold=threshold)
+            vision_result = detect_defect_gpu(filepath, threshold=threshold)
         except Exception as e:
+
             return jsonify({
                 'error': 'VISION_AGENT_UNAVAILABLE',
                 'message': f"Vision Agent failed: {str(e)}"
@@ -653,8 +666,9 @@ try:
                 if not img_path:
                     return None, "No image uploaded", "N/A", "Please upload an image."
                 try:
-                    res = vision.detect(img_path, threshold=threshold)
+                    res = detect_defect_gpu(img_path, threshold=threshold)
                     ann_path = res.get('annotated_image')
+
                     defect = res.get('primary_defect', 'none')
                     detections = res.get('detections', [])
                     
