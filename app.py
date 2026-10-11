@@ -35,7 +35,7 @@ if getattr(sys, 'frozen', False):
     except Exception:
         pass
 
-from flask import Flask, request, jsonify, render_template, send_from_directory, send_file, session, g
+from flask import Flask, request, jsonify, render_template, send_from_directory, send_file, session, g, Response
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import sys
