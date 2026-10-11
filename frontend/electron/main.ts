@@ -29,9 +29,25 @@ async function createWindow() {
 
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    // mainWindow.webContents.openDevTools();
   } else {
-    await mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    const fs = await import('fs');
+    const appDir = path.dirname(app.getPath('exe'));
+    const candidatePaths = [
+      path.join(__dirname, '..', 'dist', 'index.html'),
+      path.join(__dirname, 'dist', 'index.html'),
+      path.join(app.getAppPath(), 'dist', 'index.html'),
+      path.join(appDir, 'resources', 'app', 'dist', 'index.html'),
+      path.join(appDir, 'dist', 'index.html'),
+    ];
+
+    let foundPath = candidatePaths[0];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        foundPath = p;
+        break;
+      }
+    }
+    await mainWindow.loadFile(foundPath);
   }
 
   // Diagnostic Events

@@ -8,21 +8,43 @@ const __dirname = path.dirname(__filename);
 
 export class PathManager {
   static getBackendExecutable(): string {
-    const isDev = !app.isPackaged;
-    
-    if (isDev) {
-      // In dev mode, assume the backend has been built to dist/aeroedge-backend
-      const rootDir = path.join(__dirname, '..', '..');
-      return path.join(rootDir, 'dist', 'aeroedge-backend', 'aeroedge-backend.exe');
-    } else {
-      // In prod mode, the backend is installed in the 'resources/aeroedge-backend' directory next to the app
-      const appDir = path.dirname(app.getPath('exe'));
-      return path.join(appDir, 'resources', 'aeroedge-backend', 'aeroedge-backend.exe');
+    const appDir = path.dirname(app.getPath('exe'));
+    const rootDir = path.resolve(__dirname, '..', '..');
+
+    const candidates = [
+      // 1. Packaged inside resources/aeroedge-backend next to electron.exe
+      path.join(appDir, 'resources', 'aeroedge-backend', 'aeroedge-backend.exe'),
+      // 2. Next to win-unpacked in build/windows/backend/aeroedge-backend
+      path.join(appDir, '..', 'backend', 'aeroedge-backend', 'aeroedge-backend.exe'),
+      // 3. Directly in aeroedge-backend folder in appDir
+      path.join(appDir, 'aeroedge-backend', 'aeroedge-backend.exe'),
+      // 4. In build/windows/backend/aeroedge-backend from workspace root
+      path.join(rootDir, 'build', 'windows', 'backend', 'aeroedge-backend', 'aeroedge-backend.exe'),
+      // 5. In dist/aeroedge-backend
+      path.join(rootDir, 'dist', 'aeroedge-backend', 'aeroedge-backend.exe'),
+      // 6. Absolute workspace fallback
+      path.join('D:\\Tata Innovent\\Tata_Innovent-main\\build\\windows\\backend\\aeroedge-backend\\aeroedge-backend.exe')
+    ];
+
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) {
+          return p;
+        }
+      } catch {
+        // Continue searching
+      }
     }
+
+    return candidates[0];
   }
 
   static verifyBackendExists(): boolean {
     const backendPath = this.getBackendExecutable();
-    return fs.existsSync(backendPath);
+    try {
+      return fs.existsSync(backendPath);
+    } catch {
+      return false;
+    }
   }
 }
