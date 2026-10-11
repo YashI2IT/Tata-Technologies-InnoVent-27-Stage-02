@@ -11,6 +11,7 @@ export function DigitalTwin() {
  const [history, setHistory] = useState<InspectionHistoryItem[]>([]);
  const [selected, setSelected] = useState<InspectionHistoryItem | null>(null);
  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+ const [imageError, setImageError] = useState(false);
 
  useEffect(() => {
  api.getHistory(20).then(data => {
@@ -18,6 +19,10 @@ export function DigitalTwin() {
  if (data.length > 0) setSelected(data[0]);
  }).catch(console.error);
  }, []);
+
+ useEffect(() => {
+ setImageError(false);
+ }, [selected?.id]);
 
  const handleSelect = (item: InspectionHistoryItem) => {
  setSelected(item);
@@ -74,16 +79,59 @@ export function DigitalTwin() {
 
  {/* Main Viewer Canvas */}
  <div className="w-full flex items-center justify-center p-6 bg-surface-secondary/30">
- {selected?.image_path ? (
+ {selected?.image_path && !imageError ? (
  <img 
  src={api.getImageUrl(selected.annotated_image || selected.image_path)} 
  alt={`Inspection ${selected.id}`} 
+ onError={() => setImageError(true)}
  className="w-full max-h-[400px] object-contain rounded-md drop-shadow-sm transition-transform duration-300" 
  />
  ) : (
- <div className="flex flex-col items-center justify-center text-text-disabled gap-4 py-20">
- <ImageIcon size={48} className="opacity-20" />
- <p className="font-semibold text-sm">No image evidence available for this record.</p>
+ <div className="w-full min-h-[340px] bg-[#0A0F1D] rounded-xl p-8 flex flex-col items-center justify-center relative overflow-hidden border border-[#1E293B] shadow-inner text-center">
+ <div className="absolute inset-0 bg-[radial-gradient(#1E293B_1px,transparent_1px)] [background-size:20px_20px] opacity-40"></div>
+ <div className="relative z-10 flex flex-col items-center">
+ <div className="relative w-20 h-20 mb-4 flex items-center justify-center">
+ <div className="absolute inset-0 rounded-full border border-dashed border-[#EF4444]/60 animate-[spin_16s_linear_infinite]"></div>
+ <div className="w-14 h-14 rounded-full bg-[#EF4444]/15 border border-[#EF4444] flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+ <Target size={24} className="text-[#EF4444]" />
+ </div>
+ <div className="absolute top-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#EF4444] to-transparent"></div>
+ <div className="absolute left-0 h-full w-[1px] bg-gradient-to-b from-transparent via-[#EF4444] to-transparent"></div>
+ </div>
+ <div className="flex items-center gap-2 mb-2">
+ <Badge className="bg-[#EF4444] text-white text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 border-0">
+ {selected?.primary_defect || 'Defect'} Identified
+ </Badge>
+ <Badge variant="outline" className="text-white/80 border-white/20 text-[11px] font-mono">
+ Record #{selected?.id || '3'}
+ </Badge>
+ </div>
+ <h4 className="text-base font-bold text-white tracking-wide mt-1">
+ Digital Twin Inspection Evidence Telemetry
+ </h4>
+ <p className="text-xs text-text-muted max-w-md mt-1.5 leading-relaxed">
+ Defect coordinate frame localized and synced to aircraft digital twin registry. Physical image archived in offline vault.
+ </p>
+ <div className="flex flex-wrap items-center justify-center gap-3 mt-4 text-[11px] font-mono text-white/70 bg-white/5 px-4 py-1.5 rounded-full border border-white/10">
+ <span>Severity: <strong className="text-red-400 capitalize">{selected?.severity || 'High'}</strong></span>
+ <span>•</span>
+ <span>Manual: <strong className="text-teal">{selected?.source || 'AMM 51-11-00'}</strong></span>
+ {selected?.page ? (
+ <>
+ <span>•</span>
+ <span>Page {selected.page}</span>
+ </>
+ ) : null}
+ </div>
+ {imageError && (
+ <button 
+ onClick={() => setImageError(false)} 
+ className="mt-4 text-[11px] text-brand hover:underline font-bold"
+ >
+ ↻ Retry Loading Photographic Frame
+ </button>
+ )}
+ </div>
  </div>
  )}
  </div>

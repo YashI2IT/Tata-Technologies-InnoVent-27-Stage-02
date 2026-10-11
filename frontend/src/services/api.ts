@@ -596,17 +596,11 @@ export const api = {
 
   getImageUrl: (filename: string) => {
     if (!filename) return '';
-    if (filename.startsWith('blob:')) return filename;
+    if (filename.startsWith('blob:') || filename.startsWith('data:')) return filename;
     let normalized = filename.replace(/\\/g, '/');
-    if (normalized.startsWith('http')) return normalized;
-    if (normalized.startsWith('/')) return `${getApiBaseUrl()}${normalized}`;
-    if (normalized.startsWith('uploads/')) return `${getApiBaseUrl()}/${normalized}`;
-    if (normalized.match(/^[A-Za-z]:\//)) {
-      const parts = normalized.split('/');
-      const fname = parts[parts.length - 1];
-      return `${getApiBaseUrl()}/uploads/${fname}`;
-    }
-    return `${getApiBaseUrl()}/uploads/${normalized}`;
+    if (normalized.startsWith('http://') || normalized.startsWith('https://')) return normalized;
+    const fname = normalized.split('/').filter(Boolean).pop() || normalized;
+    return `${getApiBaseUrl()}/uploads/${fname}`;
   },
 
   getReportUrl: (inspectionId: number) => {
