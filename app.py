@@ -615,6 +615,13 @@ try:
     from a2wsgi import WSGIMiddleware
     import uvicorn
 
+    try:
+        import spaces
+        gpu_decorator = spaces.GPU
+    except Exception:
+        def gpu_decorator(f):
+            return f
+
     def build_gradio_demo():
         with gr.Blocks(title="AeroEdge-X MRO Inspection Intelligence", theme=gr.themes.Soft(primary_hue="blue", neutral_hue="slate")) as demo:
             gr.Markdown("""
@@ -640,7 +647,9 @@ try:
                     rag_box = gr.Textbox(label="AMM Manual Procedure Citation", lines=3)
                     steps_box = gr.Textbox(label="Prescribed Maintenance Action Steps", lines=5)
                     
+            @gpu_decorator
             def gradio_inspect(img_path, threshold):
+
                 if not img_path:
                     return None, "No image uploaded", "N/A", "Please upload an image."
                 try:
