@@ -9,12 +9,20 @@ export const isDemoMode = (): boolean => {
   return false;
 };
 
-let currentApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7860').replace(/\/+$/, '');
+let rawBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:7860').replace(/\/+$/, '');
+if (rawBase.includes('.hf.space') && !rawBase.endsWith('/api')) {
+  rawBase = `${rawBase}/api`;
+}
+let currentApiBaseUrl = rawBase;
 
 export const getApiBaseUrl = () => currentApiBaseUrl;
 
 export const setApiBaseUrl = (url: string) => {
-  currentApiBaseUrl = url.replace(/\/+$/, '');
+  let cleaned = url.replace(/\/+$/, '');
+  if (cleaned.includes('.hf.space') && !cleaned.endsWith('/api')) {
+    cleaned = `${cleaned}/api`;
+  }
+  currentApiBaseUrl = cleaned;
 };
 
 // In Electron desktop environment, automatically query dynamic backend port if available
