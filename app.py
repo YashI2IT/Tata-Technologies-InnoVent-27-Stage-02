@@ -110,6 +110,29 @@ def create_app(config_name=None):
     # Configure CORS for credentialed and cloud requests
     CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
+    @app.before_request
+    def handle_cors_preflight():
+        if request.method == "OPTIONS":
+            resp = Response()
+            origin = request.headers.get("Origin", "*")
+            resp.headers["Access-Control-Allow-Origin"] = origin
+            resp.headers["Access-Control-Allow-Credentials"] = "true"
+            resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept"
+            return resp
+
+    @app.after_request
+    def set_cors_headers(response):
+        origin = request.headers.get("Origin")
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+        elif "Access-Control-Allow-Origin" not in response.headers:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept"
+        return response
+
     # Register blueprints
     # Blueprint removed
 
@@ -628,10 +651,33 @@ def create_app(config_name=None):
         )
 
 
+    class PrefixMiddleware:
+        def __init__(self, wsgi_app):
+            self.wsgi_app = wsgi_app
+        def __call__(self, environ, start_response):
+            path = environ.get('PATH_INFO', '')
+            if path in ('/api', '/v1'):
+                environ['PATH_INFO'] = '/'
+            elif path.startswith('/v1/'):
+                environ['PATH_INFO'] = path[3:]
+            elif path.startswith('/api/'):
+                environ['PATH_INFO'] = path[4:]
+            return self.wsgi_app(environ, start_response)
+
+    app.wsgi_app = PrefixMiddleware(app.wsgi_app)
     return app
 
 # Default Flask application instance
 app = create_app()
+
+# Start AWS Background Synchronization Worker
+try:
+    from backend.agents.digital_twin import DigitalTwinAgent
+    DigitalTwinAgent()
+    from backend.services.aws_sync import sync_worker
+    sync_worker.start()
+except Exception as e:
+    print(f"Failed to start AWS Sync Worker: {e}")
 
 # Gradio Integration for Hugging Face Spaces & Cloud Deployment
 try:
