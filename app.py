@@ -808,14 +808,56 @@ if __name__ == '__main__':
         
     if GRADIO_ENABLED and gradio_demo is not None:
         print(f"🚀 Launching Gradio + REST API server on http://{args.host}:{port}")
-        from gradio.routes import App
-        custom_app = App()
+        try:
+            from a2wsgi import WSGIMiddleware
+        except ImportError:
+            from starlette.middleware.wsgi import WSGIMiddleware
+
         wsgi = WSGIMiddleware(app)
-        custom_app.mount("/v1", wsgi)
-        custom_app.mount("/api_v1", wsgi)
-        gradio_demo.launch(_app=custom_app, server_name=args.host, server_port=port, prevent_thread_lock=True)
-        print("✅ AeroEdge-X Cloud AI Backend & REST API successfully mounted on /v1 and running!")
-        gradio_demo.block_thread()
+
+        class AeroEdgeDispatcher:
+            def __init__(self, original_app, wsgi_app):
+                self.original_app = original_app
+                self.wsgi_app = wsgi_app
+                self.api_prefixes = (
+                    '/api', '/v1', '/api_v1',
+                    '/health', '/analyze', '/history', '/notifications',
+                    '/sync', '/reports', '/uploads', '/auth', '/system', '/search', '/digital-twin'
+                )
+
+            async def __call__(self, scope, receive, send):
+                if scope['type'] == 'http':
+                    path = scope.get('path', '')
+                    if any(path == p or path.startswith(p + '/') for p in self.api_prefixes):
+                        return await self.wsgi_app(scope, receive, send)
+                return await self.original_app(scope, receive, send)
+
+        try:
+            from fastapi import FastAPI
+            from fastapi.middleware.cors import CORSMiddleware
+            import uvicorn
+
+            fastapi_app = FastAPI(title="AeroEdge-X AI Backend")
+            fastapi_app.add_middleware(
+                CORSMiddleware,
+                allow_origins=["*"],
+                allow_credentials=True,
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+            fastapi_app = gr.mount_gradio_app(fastapi_app, gradio_demo, path="/")
+            final_app = AeroEdgeDispatcher(fastapi_app, wsgi)
+            print("✅ AeroEdge-X Unified Gradio + Flask ASGI Dispatcher initialized successfully!")
+            uvicorn.run(final_app, host=args.host, port=port, log_level="info")
+        except Exception as e:
+            print(f"⚠️ Uvicorn/FastAPI mount fallback triggered: {e}")
+            from gradio.routes import App
+            custom_app = App()
+            custom_app.mount("/api", wsgi)
+            custom_app.mount("/v1", wsgi)
+            custom_app.mount("/api_v1", wsgi)
+            gradio_demo.launch(_app=custom_app, server_name=args.host, server_port=port, prevent_thread_lock=True)
+            gradio_demo.block_thread()
     else:
         app.run(host=args.host, port=port, threaded=True, load_dotenv=False)
 
