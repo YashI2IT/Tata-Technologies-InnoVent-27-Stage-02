@@ -37,7 +37,7 @@ export function Dashboard() {
  const navigate = useNavigate();
 
  useEffect(() => {
- api.getHistory(50).then(data => {
+ api.getHistory(20).then(data => {
  setHistory(data);
  setLoading(false);
  setApiError(false);
@@ -90,7 +90,7 @@ export function Dashboard() {
 
  const handleRefresh = () => {
  setLoading(true);
- api.getHistory(50).then(data => {
+ api.getHistory(20).then(data => {
  setHistory(data);
  setLoading(false);
  setApiError(false);

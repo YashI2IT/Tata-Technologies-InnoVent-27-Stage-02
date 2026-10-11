@@ -61,6 +61,9 @@ win-unpacked/
 *.sqlite3
 data/chroma/
 database/*.db
+database/*.db-shm
+database/*.db-wal
+
 
 # Runtime generated files
 uploads/*
@@ -77,8 +80,8 @@ logs/*
 installer/output/
 
 # Large model files (use Git LFS or download instructions)
-# models/best.pt
-# models/all-MiniLM-L6-v2/
+models/all-MiniLM-L6-v2/
+
 
 # OS / Editor metadata
 .DS_Store

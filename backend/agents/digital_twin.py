@@ -350,15 +350,29 @@ class DigitalTwinAgent:
         
         self.conn.commit()
         print(f"[DigitalTwin] Logged inspection #{inspection_id} and queued for sync ✅")
+
+        # Enforce maximum 20-report retention locally (pruning older synced inspections)
+        try:
+            self.conn.execute('''
+                DELETE FROM inspections 
+                WHERE id NOT IN (
+                    SELECT id FROM inspections ORDER BY id DESC LIMIT 20
+                ) AND sync_status = 'SYNCED'
+            ''')
+            self.conn.commit()
+        except Exception:
+            pass
+
         return inspection_id
 
-    def get_history(self, limit: int = 10) -> list:
+    def get_history(self, limit: int = 20) -> list:
+        effective_limit = min(max(1, int(limit)), 20) if limit else 20
         cursor = self.conn.execute('''
             SELECT id, timestamp, primary_defect, severity, source, page, image_path, sync_status
             FROM inspections
             ORDER BY id DESC
             LIMIT ?
-        ''', (limit,))
+        ''', (effective_limit,))
         rows = cursor.fetchall()
         history = []
         for row in rows:

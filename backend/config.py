@@ -74,6 +74,11 @@ class BaseConfig:
     # CORS Configuration
     RAW_ORIGINS = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173,http://127.0.0.1:5173")
     FRONTEND_ORIGINS = [origin.strip() for origin in RAW_ORIGINS.split(",") if origin.strip()]
+    # Auto-allow Vercel and Hugging Face domains
+    import re
+    FRONTEND_ORIGINS.append(re.compile(r"^https://.*\.vercel\.app$"))
+    FRONTEND_ORIGINS.append(re.compile(r"^https://.*\.hf\.space$"))
+    FRONTEND_ORIGINS.append(re.compile(r"^https://.*huggingface\.co$"))
 
     # Application Metadata
     APP_VERSION = os.environ.get("APP_VERSION", "v2.6.0-hardened")

@@ -49,15 +49,19 @@ The `vercel.json` in the repository root configures:
 
 ### Environment Variables (Vercel Dashboard)
 
-| Variable | Type | Value |
-|----------|------|-------|
-| `VITE_DEMO_MODE` | Config | `true` |
-| `VITE_API_BASE_URL` | Config | (leave empty for demo mode) |
+| Variable | Required? | Example Value | Purpose |
+|----------|:---------:|---------------|---------|
+| `VITE_API_BASE_URL` | Optional | `https://<user>-aeroedge-backend.hf.space` | Connects Vercel UI to the live Hugging Face AI backend |
+| `VITE_DEMO_MODE` | Optional | `false` | Set to `false` when using Hugging Face; defaults to auto-fallback |
 
-### Demo Mode
+### Live AI Backend Integration (Hugging Face Spaces)
 
-When `VITE_DEMO_MODE=true` or when the app detects a non-localhost host
-without a configured API URL, it automatically switches to demo mode.
+When `VITE_API_BASE_URL` is set to your Hugging Face Space URL:
+- Real-time YOLOv11 defect inference executes on Hugging Face (16 GB RAM)
+- Local FAA & AMM RAG vector search via ChromaDB
+- SQLite state management and report generation
+- AWS S3 & DynamoDB synchronization runs automatically in background
+- If the Space is starting up, the frontend automatically falls back to demo mode with zero UI errors
 
 Demo mode provides:
 - Sample inspection results (crack detection, confidence 0.87)

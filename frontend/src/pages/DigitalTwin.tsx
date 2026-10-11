@@ -1,10 +1,9 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { History, FileText, Download, Target, Calendar, AlertTriangle, Search, ImageIcon, Maximize, FileOutput, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, InspectionHistoryItem } from "@/services/api";
-import { AircraftModel, AircraftModelRef } from "@/components/3d/AircraftModel";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerContainer, staggerItem, popIn, slideDownPop } from "@/lib/motion";
 
@@ -12,7 +11,6 @@ export function DigitalTwin() {
  const [history, setHistory] = useState<InspectionHistoryItem[]>([]);
  const [selected, setSelected] = useState<InspectionHistoryItem | null>(null);
  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
- const cameraRef = useRef<AircraftModelRef | null>(null);
 
  useEffect(() => {
  api.getHistory(20).then(data => {
@@ -23,9 +21,6 @@ export function DigitalTwin() {
 
  const handleSelect = (item: InspectionHistoryItem) => {
  setSelected(item);
- if (cameraRef.current) {
- cameraRef.current.resetView();
- }
  };
 
  return (

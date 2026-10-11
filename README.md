@@ -1,6 +1,20 @@
+---
+title: AeroEdge-X AI Backend
+emoji: ✈️
+colorFrom: indigo
+colorTo: blue
+sdk: gradio
+sdk_version: 6.30.0
+python_version: '3.12'
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # AeroEdge-X
 
 ## Agentic Edge AI for Digital Twin-Enabled Aerospace MRO
+
 
 AeroEdge-X is an offline-first aircraft maintenance inspection system that integrates
 computer vision defect detection, local maintenance document retrieval, local LLM
@@ -80,7 +94,7 @@ Image Upload
 - ✅ System diagnostics and health monitoring
 - ✅ PyInstaller backend bundling
 - ✅ Inno Setup Windows installer
-- ✅ 3D aircraft digital twin viewer (Three.js)
+- ✅ Aircraft digital twin & inspection evidence viewer
 
 ## Planned Capabilities
 
@@ -252,11 +266,14 @@ Tata_Innovent/
 ├── manuals/                        # Maintenance PDF documents
 ├── data/chroma/                    # ChromaDB vector store
 ├── database/                       # SQLite database
-├── installer/                      # Inno Setup installer script
+├── aws/                            # AWS CloudFormation & Lambda synchronization
+├── jetson/                         # Jetson Orin Nano Edge AI microservice & TensorRT
+├── installer/                      # Inno Setup installer script & output
 │
 ├── docs/
-│   ├── deployment/                 # Deployment guides
-│   └── pre-read/figures/           # Technical diagrams (Fig 13–25)
+│   ├── aws/                        # Cloud setup, checklist & integration guides
+│   ├── jetson/                     # Jetson deployment & benchmark specifications
+│   └── deployment/                 # Desktop & Vercel deployment guides
 │
 └── .github/workflows/ci.yml       # GitHub Actions CI
 ```

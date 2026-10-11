@@ -13,7 +13,8 @@ export class BackendManager {
 
     const backendExe = PathManager.getBackendExecutable();
     if (!PathManager.verifyBackendExists()) {
-      throw new Error(`Backend executable not found at: ${backendExe}`);
+      console.log(`[BackendManager] Precompiled backend not found at: ${backendExe}. Assuming dev mode: connecting to active Python backend on port ${this.backendPort}.`);
+      return this.backendPort;
     }
 
     console.log(`Starting local AI backend from: ${backendExe}`);

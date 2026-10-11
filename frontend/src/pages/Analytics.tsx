@@ -98,7 +98,7 @@ export function Analytics() {
 
  const fetchData = () => {
  setLoading(true);
- api.getHistory(500).then(data => {
+ api.getHistory(20).then(data => {
  setHistory(data);
  setLastFetched(new Date());
  setLoading(false);

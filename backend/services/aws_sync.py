@@ -52,8 +52,14 @@ class AWSSyncWorker:
             
         if not self.s3_client:
             try:
-                self.s3_client = boto3.client('s3', region_name=self.region)
-                self.dynamo_client = boto3.client('dynamodb', region_name=self.region)
+                kwargs = {'region_name': self.region}
+                aws_key = os.environ.get("AWS_ACCESS_KEY_ID")
+                aws_secret = os.environ.get("AWS_SECRET_ACCESS_KEY")
+                if aws_key and aws_secret:
+                    kwargs['aws_access_key_id'] = aws_key
+                    kwargs['aws_secret_access_key'] = aws_secret
+                self.s3_client = boto3.client('s3', **kwargs)
+                self.dynamo_client = boto3.client('dynamodb', **kwargs)
             except Exception as e:
                 print(f"[AWSSyncWorker] Failed to initialize AWS clients: {e}")
                 return False
@@ -73,30 +79,60 @@ class AWSSyncWorker:
                 traceback.print_exc()
             time.sleep(self.interval)
 
+    def _is_online(self) -> bool:
+        """Check if internet connectivity is available."""
+        import socket
+        for host, port in [("8.8.8.8", 53), ("1.1.1.1", 53)]:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(2.0)
+                s.connect((host, port))
+                s.close()
+                return True
+            except Exception:
+                continue
+        return False
+
+    def trigger_now(self):
+        """Immediately triggers a sync queue cycle."""
+        if not self.running:
+            self.start()
+        try:
+            return self._process_queue()
+        except Exception as e:
+            return {"error": str(e)}
+
     def _process_queue(self):
         # Determine if we even have credentials or AWS URLs
-        if not self.api_url or not self.bucket:
+        if not self.api_url and not self.bucket:
             # AWS Infrastructure not provisioned. Do not attempt sync.
-            return
+            return {"status": "skipped", "reason": "AWS credentials not configured"}
+
+        if not self._is_online():
+            print("[AWSSyncWorker] Offline: No internet connection detected. Retaining inspections locally in SQLite outbox.")
+            return {"status": "offline", "message": "Device offline, records safely held in local outbox"}
 
         if not self._init_clients():
-            return
+            return {"status": "skipped", "reason": "Could not initialize AWS clients"}
 
         conn = self._get_connection()
+        synced_count = 0
         try:
-            # Claim up to 5 PENDING or FAILED (with attempts < 5) jobs
+            # Claim up to 10 PENDING or FAILED jobs
             cursor = conn.execute('''
                 SELECT id, inspection_id, payload, image_path, report_path, attempts 
                 FROM sync_outbox 
-                WHERE status IN ('PENDING', 'FAILED') AND attempts < 5
+                WHERE status IN ('PENDING', 'FAILED') AND attempts < 10
                 ORDER BY created_at ASC
-                LIMIT 5
+                LIMIT 10
             ''')
             jobs = cursor.fetchall()
             
             for job in jobs:
-                self._sync_job(conn, job)
-                
+                if self._sync_job(conn, job):
+                    synced_count += 1
+                    
+            return {"status": "completed", "synced_jobs": synced_count}
         finally:
             conn.close()
 
@@ -108,7 +144,7 @@ class AWSSyncWorker:
         image_path = job['image_path']
         report_path = job['report_path']
         
-        print(f"[AWSSyncWorker] SYNC START - inspection={payload['inspection_id']} attempt={attempts}")
+        print(f"[AWSSyncWorker] SYNC START - inspection={payload.get('inspection_id')} attempt={attempts}")
         
         # Mark as SYNCING
         conn.execute("UPDATE sync_outbox SET status = 'SYNCING', attempts = ?, updated_at = ? WHERE id = ?", 
@@ -117,21 +153,47 @@ class AWSSyncWorker:
 
         try:
             # 1. Upload Artifacts to S3
-            if image_path and os.path.exists(image_path):
-                s3_key = payload['image_key']
-                self.s3_client.upload_file(image_path, self.bucket, s3_key)
-            
-            if report_path and os.path.exists(report_path):
-                s3_key = payload['report_key']
-                self.s3_client.upload_file(report_path, self.bucket, s3_key)
+            if self.bucket and self.s3_client:
+                if image_path and os.path.exists(image_path):
+                    s3_key = payload.get('image_key', f"images/{payload.get('inspection_id')}/original.jpg")
+                    self.s3_client.upload_file(image_path, self.bucket, s3_key)
+                
+                if report_path and os.path.exists(report_path):
+                    s3_key = payload.get('report_key', f"reports/{payload.get('inspection_id')}/report.pdf")
+                    self.s3_client.upload_file(report_path, self.bucket, s3_key)
 
-            # 2. Call API Gateway to record metadata in DynamoDB securely
-            response = requests.post(
-                f"{self.api_url}/sync/inspection",
-                json=payload,
-                timeout=10
-            )
-            response.raise_for_status()
+            # 2. Call API Gateway or fallback to direct DynamoDB
+            metadata_recorded = False
+            endpoint_url = self.api_url.rstrip('/') if self.api_url else None
+            if endpoint_url:
+                if not endpoint_url.endswith('/sync/inspection'):
+                    endpoint_url = f"{endpoint_url}/sync/inspection"
+                try:
+                    response = requests.post(
+                        endpoint_url,
+                        json=payload,
+                        timeout=10
+                    )
+                    if response.status_code == 200:
+                        metadata_recorded = True
+                except Exception as gw_err:
+                    print(f"[AWSSyncWorker] API Gateway call failed ({gw_err}), attempting direct DynamoDB write...")
+
+            if not metadata_recorded and self.dynamo_client and self.table:
+                # Direct DynamoDB fallback for metadata
+                item = {
+                    'inspection_id': {'S': str(payload.get('inspection_id', f'INSP-{inspection_id}'))},
+                    'device_id': {'S': str(payload.get('device_id', 'AEROEDGE-001'))},
+                    'timestamp': {'S': str(payload.get('timestamp', ''))},
+                    'defect': {'S': str(payload.get('defect', 'none'))},
+                    'confidence': {'S': str(payload.get('confidence', '0.0'))},
+                    'severity': {'S': str(payload.get('severity', 'none'))},
+                    'model': {'S': str(payload.get('model', 'yolov11'))},
+                    'report_key': {'S': str(payload.get('report_key', ''))},
+                    'image_key': {'S': str(payload.get('image_key', ''))}
+                }
+                self.dynamo_client.put_item(TableName=self.table, Item=item)
+                metadata_recorded = True
 
             # 3. Mark success
             now_iso = datetime.now().isoformat()
@@ -145,14 +207,15 @@ class AWSSyncWorker:
                 UPDATE inspections
                 SET sync_status = 'SYNCED', last_sync_at = ?, cloud_record_id = ?
                 WHERE id = ?
-            ''', (now_iso, payload['inspection_id'], inspection_id))
+            ''', (now_iso, payload.get('inspection_id'), inspection_id))
             
             conn.commit()
-            print(f"[AWSSyncWorker] SYNC SUCCESS - inspection={payload['inspection_id']}")
+            print(f"[AWSSyncWorker] SYNC SUCCESS - inspection={payload.get('inspection_id')}")
+            return True
 
         except Exception as e:
-            # Rollback to FAILED
-            print(f"[AWSSyncWorker] SYNC FAILED - inspection={payload['inspection_id']} error={e}")
+            # Handle temporary network disconnect gracefully
+            print(f"[AWSSyncWorker] SYNC TEMPORARILY FAILED - inspection={payload.get('inspection_id')} error={e}")
             now_iso = datetime.now().isoformat()
             conn.execute('''
                 UPDATE sync_outbox 
@@ -167,6 +230,7 @@ class AWSSyncWorker:
             ''', (str(e), attempts, inspection_id))
             
             conn.commit()
+            return False
 
 # Singleton instance
 config = get_config()

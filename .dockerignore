@@ -1,0 +1,36 @@
+# Git
+.git
+.github
+.gitignore
+
+# Virtual Environments
+.venv
+venv
+ENV/
+env/
+
+# Electron Desktop & Windows Binaries
+build/
+installer/
+*.exe
+*.msi
+*.zip
+
+# Frontend (Hosted on Vercel)
+frontend/
+node_modules/
+
+# Python Cache & Tests
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+tests/
+test_data/
+.coverage
+htmlcov/
+
+# Logs & Temporary Files
+*.log
+.DS_Store
+Thumbs.db

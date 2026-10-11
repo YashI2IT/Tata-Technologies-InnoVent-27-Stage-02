@@ -21,7 +21,7 @@ export function Reports() {
  const [previewReport, setPreviewReport] = useState<InspectionHistoryItem | null>(null);
 
  useEffect(() => {
- api.getHistory(50).then(data => {
+ api.getHistory(20).then(data => {
  setHistory(data);
  setLoading(false);
  }).catch(err => {
