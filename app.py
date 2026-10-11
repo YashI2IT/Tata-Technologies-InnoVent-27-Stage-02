@@ -1,3 +1,14 @@
+# ZeroGPU Support for Hugging Face Spaces (must be imported before torch or gradio)
+try:
+    import spaces
+except ImportError:
+    class spaces:
+        @staticmethod
+        def GPU(f=None, *args, **kwargs):
+            if callable(f):
+                return f
+            return lambda fn: fn
+
 import os
 import sys
 import uuid
@@ -63,15 +74,17 @@ rag = RAGAgent()
 reasoning = ReasoningAgent()
 print("✅ All agents ready!")
 
-# ZeroGPU Support for Hugging Face Spaces
-try:
-    import spaces
-    @spaces.GPU
-    def detect_defect_gpu(filepath, threshold=0.4):
+def detect_defect_safe(filepath, threshold=0.4):
+    try:
         return vision.detect(filepath, threshold=threshold)
-except Exception:
-    def detect_defect_gpu(filepath, threshold=0.4):
-        return vision.detect(filepath, threshold=threshold)
+    except Exception as e:
+        if hasattr(vision, 'model') and vision.model is not None:
+            try:
+                vision.model.to('cpu')
+            except Exception:
+                pass
+            return vision.detect(filepath, threshold=threshold)
+        raise e
 
 
 
@@ -275,7 +288,7 @@ def create_app(config_name=None):
         except (ValueError, TypeError):
             threshold = 0.4
         try:
-            vision_result = detect_defect_gpu(filepath, threshold=threshold)
+            vision_result = detect_defect_safe(filepath, threshold=threshold)
         except Exception as e:
 
             return jsonify({
@@ -620,23 +633,13 @@ def create_app(config_name=None):
 # Default Flask application instance
 app = create_app()
 
-# Gradio + ASGI Integration for Hugging Face Spaces & Cloud Deployment
+# Gradio Integration for Hugging Face Spaces & Cloud Deployment
 try:
     import gradio as gr
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
     from a2wsgi import WSGIMiddleware
-    import uvicorn
-
-    try:
-        import spaces
-        gpu_decorator = spaces.GPU
-    except Exception:
-        def gpu_decorator(f):
-            return f
 
     def build_gradio_demo():
-        with gr.Blocks(title="AeroEdge-X MRO Inspection Intelligence", theme=gr.themes.Soft(primary_hue="blue", neutral_hue="slate")) as demo:
+        with gr.Blocks(title="AeroEdge-X MRO Inspection Intelligence") as demo:
             gr.Markdown("""
             # ✈️ AeroEdge-X — Agentic AI for Aerospace MRO
             ### Tata Technologies InnoVent-27 Stage 02 — Edge-to-Cloud Digital Twin Inspection System
@@ -660,13 +663,12 @@ try:
                     rag_box = gr.Textbox(label="AMM Manual Procedure Citation", lines=3)
                     steps_box = gr.Textbox(label="Prescribed Maintenance Action Steps", lines=5)
                     
-            @gpu_decorator
+            @spaces.GPU
             def gradio_inspect(img_path, threshold):
-
                 if not img_path:
                     return None, "No image uploaded", "N/A", "Please upload an image."
                 try:
-                    res = detect_defect_gpu(img_path, threshold=threshold)
+                    res = detect_defect_safe(img_path, threshold=threshold)
                     ann_path = res.get('annotated_image')
 
                     defect = res.get('primary_defect', 'none')
@@ -711,23 +713,10 @@ try:
         return demo
 
     gradio_demo = build_gradio_demo()
-    asgi_app = FastAPI(title="AeroEdge-X AI Backend")
-    asgi_app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    # Mount Gradio at /gradio
-    asgi_app = gr.mount_gradio_app(asgi_app, gradio_demo, path="/gradio")
-    # Mount Flask at root /
-    asgi_app.mount("/", WSGIMiddleware(app))
     GRADIO_ENABLED = True
 except Exception as e:
     GRADIO_ENABLED = False
     gradio_demo = None
-    asgi_app = None
 
 if __name__ == '__main__':
     import multiprocessing
@@ -771,8 +760,13 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"Failed to start AWS Sync Worker: {e}")
         
-    if GRADIO_ENABLED and asgi_app is not None:
-        import uvicorn
-        uvicorn.run(asgi_app, host=args.host, port=port, log_level="info")
+    if GRADIO_ENABLED and gradio_demo is not None:
+        print(f"🚀 Launching Gradio + REST API server on http://{args.host}:{port}")
+        gradio_demo.launch(server_name=args.host, server_port=port, prevent_thread_lock=True)
+        gradio_demo.server_app.mount("/api", WSGIMiddleware(app))
+        gradio_demo.server_app.mount("/", WSGIMiddleware(app))
+        print("✅ AeroEdge-X Cloud AI Backend & REST API successfully mounted and running!")
+        gradio_demo.block_thread()
     else:
-        app.run(host=args.host, port=port, threaded=True, load_dotenv=False)
+        app.run(host=args.host, port=port, threaded=True, load_dotenv=False)
+
