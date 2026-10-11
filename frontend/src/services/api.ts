@@ -69,12 +69,47 @@ export interface VisionResult {
   status: 'defect_found' | 'no_defect';
 }
 
+export interface RagChunk {
+  rank?: number;
+  text: string;
+  source: string;
+  page: number;
+  chapter?: string;
+  category?: string;
+  confidence?: number;
+}
+
 export interface RagResult {
   query: string;
   procedure: string;
   source: string;
   page: number;
-  chunks: { text: string; source: string; page: number }[];
+  chapter?: string;
+  manual_id?: string;
+  ata_code?: string;
+  chunks: RagChunk[];
+}
+
+export interface ManualChapter {
+  number: string;
+  title: string;
+  pages: string;
+  ata: string;
+  featured?: boolean;
+  content_preview?: string;
+}
+
+export interface ManualItem {
+  id: string;
+  title: string;
+  full_title: string;
+  authority: string;
+  category: string;
+  pages: number;
+  effective_date: string;
+  filename: string;
+  description: string;
+  chapters: ManualChapter[];
 }
 
 // Simple fetch with timeout, no authentication overhead
@@ -230,11 +265,253 @@ const DEMO_VISION: VisionResult = {
 
 const DEMO_RAG: RagResult = {
   query: 'crack',
-  procedure: 'Refer to AC 43.13-1B Chapter 4 Section 3 — Visual inspection of surface cracks. Measure crack length and depth. If crack exceeds allowable limits per AMM, initiate repair per SRM Chapter 51-70-11.',
-  source: 'ac_43.13-1b_w-chg1.pdf',
+  procedure: 'Stop-drill crack extremities using approved drill bit size per AMM 51-10-01. Inspect internal structure for subsurface propagation using eddy current or high-frequency NDT. Fabricate external aluminum 2024-T3 doubler patch overlapping boundary by minimum 25.4mm (1.0 inch). Fasten using MS20470AD rivets staggered at approved pitch.',
+  source: 'FAA AC 43.13-1B Section 4 (Metal Structure Repair)',
   page: 42,
-  chunks: [{ text: 'Surface crack inspection procedure per AC 43.13-1B.', source: 'ac_43.13-1b_w-chg1.pdf', page: 42 }]
+  chapter: 'Chapter 4 — Metal Structure, Welding, and Brazing',
+  manual_id: 'faa-ac-43-13-1b',
+  ata_code: 'ATA 51-10-01 (Crack Evaluation & Stop-Drilling)',
+  chunks: [
+    {
+      rank: 1,
+      text: 'Stop-drill crack extremities using approved drill bit size (#30 or 1/8 inch) per AMM 51-10-01. Center punch exactly at the crack tip under 10x optical magnification to relieve stress concentration. Deburr both sides of drilled hole to prevent secondary crack nucleation.',
+      source: 'FAA AC 43.13-1B Section 4 (Metal Structure Repair)',
+      page: 42,
+      chapter: 'Chapter 4: Metal Structure Repairs',
+      category: 'Crack Assessment & Stop-Drill Relieving',
+      confidence: 0.97
+    },
+    {
+      rank: 2,
+      text: 'Inspect internal structure beneath cracked skin using High-Frequency Eddy Current (HFEC) or High-Sensitivity Penetrant (Type 1 Method D). Verify crack has not propagated into underlying stringers, frames, or shear ties before sizing repair doubler.',
+      source: 'FAA AC 43.13-1B Chapter 5 (Nondestructive Inspection)',
+      page: 248,
+      chapter: 'Chapter 5: Nondestructive Inspection (NDI)',
+      category: 'Subsurface NDT Verification & Eddy Current',
+      confidence: 0.92
+    },
+    {
+      rank: 3,
+      text: 'Fabricate external aluminum 2024-T3 / 7075-T6 doubler patch overlapping crack boundaries by a minimum of 25.4mm (1.0 inch) in all directions. Chamfer patch edges at 45 degrees to maintain aerodynamic boundary layer compliance. Fasten using MS20470AD or CherryMAX fasteners.',
+      source: 'FAA AC 43.13-1B Section 4 (Metal Repair Procedures)',
+      page: 181,
+      chapter: 'Chapter 4: Metal Structure Repairs',
+      category: 'Doubler Fabrication & Fastener Specification',
+      confidence: 0.89
+    },
+    {
+      rank: 4,
+      text: 'Seal doubler perimeter with MIL-PRF-8116 faying surface sealant to prevent moisture entrapment and crevice corrosion. Verify torque or bucked rivet shop head dimensions (1.5x shank diameter width, 0.5x height). Archive repair in technical logbook under FAR 43.9.',
+      source: 'FAA AC 43.13-1B Section 4 (Metal Repair Procedures)',
+      page: 185,
+      chapter: 'Chapter 4: Metal Structure Repairs',
+      category: 'Corrosion Sealing & Regulatory Log Sign-Off',
+      confidence: 0.85
+    }
+  ]
 };
+
+export const DEMO_MANUALS: ManualItem[] = [
+  {
+    id: "faa-ac-43-13-1b",
+    title: "FAA AC 43.13-1B (Change 1)",
+    full_title: "Acceptable Methods, Techniques, and Practices — Aircraft Inspection and Repair",
+    authority: "Federal Aviation Administration (FAA)",
+    category: "Regulatory Standard",
+    pages: 646,
+    effective_date: "September 2001 (Rev 1B-CHG1)",
+    filename: "ac_43.13-1b_w-chg1.pdf",
+    description: "The primary airworthiness reference manual governing standard practices for metallic structures, sheet metal repair, riveting, welding, corrosion prevention, and nondestructive inspection (NDI).",
+    chapters: [
+      {
+        number: "1",
+        title: "Wood Structure",
+        pages: "1–40",
+        ata: "ATA 51-00",
+        content_preview: "Inspection of wood structures, determination of moisture content, grain orientation limits, and synthetic resin adhesive requirements per FAA Part 43."
+      },
+      {
+        number: "2",
+        title: "Fabric Covering",
+        pages: "41–70",
+        ata: "ATA 51-00",
+        content_preview: "Standard practices for inspecting doped fabric, synthetic polyester fabrics, rib lacing spacing, and tear strength testing using Maule/Seyboth testers."
+      },
+      {
+        number: "3",
+        title: "Fiberglass and Plastics",
+        pages: "71–140",
+        ata: "ATA 51-40",
+        content_preview: "Composite damage assessment, stepped-sanding scarf repairs for fiberglass laminates, thermosetting resin mixing, and vacuum bag curing standards."
+      },
+      {
+        number: "4",
+        title: "Metal Structure, Welding, and Brazing",
+        pages: "141–240",
+        ata: "ATA 51-10",
+        featured: true,
+        content_preview: "Section 1: General Sheet Metal Practices. Section 2: Riveting (2D edge distance, 4D rivet pitch rules, rivet shear strengths). Section 3: Structural Damage Assessment (Dent depth-to-width ratio limits per AMM 51-11-00; sharp crease vs smooth dent limits). Section 4: External Reinforcing Doubler Patch Fabrication (2024-T3 / 7075-T6 alloy matching, 45-degree bevel edge chamfering, staggered hole patterns). Section 5: Stop-Drilling Crack Extremities (#30 drill bit with optical centering)."
+      },
+      {
+        number: "5",
+        title: "Nondestructive Inspection (NDI)",
+        pages: "241–290",
+        ata: "ATA 51-05",
+        content_preview: "Liquid penetrant testing (Type 1 Method D), magnetic particle examination for ferrous alloys, High-Frequency Eddy Current (HFEC) for subsurface crack detection around fastener holes, and ultrasonic pulse-echo thickness measurement."
+      },
+      {
+        number: "6",
+        title: "Corrosion, Removal, and Protection",
+        pages: "291–360",
+        ata: "ATA 51-20",
+        featured: true,
+        content_preview: "Classification of corrosion (surface, galvanic, pitting, intergranular, exfoliation, stress corrosion cracking). Mechanical removal using Scotch-Brite or 320-grit aluminum oxide (zero steel wool allowed). Allowable blending depth: max 10% nominal skin gauge. Chemical conversion coating via Alodine 1200 (MIL-DTL-81706) golden-brown film. Epoxy chromate barrier primer (MIL-PRF-23377 Type I Class C2) application."
+      },
+      {
+        number: "7",
+        title: "Aircraft Hardware, Bolts, Rivets, and Screws",
+        pages: "361–420",
+        ata: "ATA 51-30",
+        content_preview: "Identification of AN, MS, and NAS fasteners. Grip length selection, self-locking nut limits, cotter pin installation, safety wire twisting (6 to 8 twists per inch), and blind fastener substitutions."
+      },
+      {
+        number: "8",
+        title: "Control Cables & Rigging",
+        pages: "421–480",
+        ata: "ATA 27-00",
+        content_preview: "Cable proof-load testing, nicopress oval sleeve swaging with go/no-go gauges, pulley alignment wear angles, and turnbuckle safety wiring procedures."
+      },
+      {
+        number: "9",
+        title: "Aircraft Electrical Systems",
+        pages: "481–550",
+        ata: "ATA 24-00",
+        content_preview: "Wire harness routing, bend radius criteria (min 10x diameter), terminal lug crimping inspection, bonding jumper resistance testing (under 0.003 ohms), and circuit protection sizing."
+      },
+      {
+        number: "10",
+        title: "Aircraft Instruments & Avionics",
+        pages: "551–646",
+        ata: "ATA 31-00",
+        content_preview: "Pitot-static leak check tolerances, compass swing magnetic calibration, gyroscopic instrument shock mounting, and antenna grounding bonding requirements."
+      }
+    ]
+  },
+  {
+    id: "airbus-amm-a320",
+    title: "Airbus A320 AMM (AS-AMM-01-000)",
+    full_title: "Aircraft Maintenance Manual — Chapter 51 Standard Practices: Structures",
+    authority: "Airbus S.A.S. / EASA Part-145",
+    category: "OEM Manufacturer Manual",
+    pages: 784,
+    effective_date: "May 2018 (Rev 01)",
+    filename: "AS-AMM-01-000_I1_R1_20180202.pdf",
+    description: "Comprehensive OEM airframe structural inspection manual containing specific allowable damage limits (ADL), temporary/permanent patch designs, and aerodynamic finish criteria for commercial transports.",
+    chapters: [
+      {
+        number: "51-00",
+        title: "Standard Practices - General Airframe Structures",
+        pages: "1–60",
+        ata: "ATA 51-00",
+        content_preview: "OEM structural airframe divisions, major zone numbering (Zones 100-800), station reference coordinate axes, and corrosion prevention control program (CPCP) tier classifications."
+      },
+      {
+        number: "51-10",
+        title: "Structural Damage Assessment & Dent Depth Ratios",
+        pages: "61–140",
+        ata: "ATA 51-10",
+        featured: true,
+        content_preview: "Dent depth measurement protocols using dial depth indicator bridges. Allowable damage limit (ADL) thresholds: dents < 0.75mm with radius > 30x depth in Zone A require monitoring only; dents exceeding 0.75mm or within 50mm of fastener rows require SRM doubler patch."
+      },
+      {
+        number: "51-11",
+        title: "Metallic Skin & Web Damage Evaluation",
+        pages: "141–220",
+        ata: "ATA 51-11",
+        featured: true,
+        content_preview: "Classification of fuselage pressurized vs non-pressurized skin damage. Permissible scratch blend-out ratios (minimum 20:1 blend slope). Verification of internal frame web stability and stringer flange integrity."
+      },
+      {
+        number: "51-20",
+        title: "Corrosion Categorization & Material Blending Limits",
+        pages: "221–320",
+        ata: "ATA 51-20",
+        content_preview: "Corrosion Level 1 vs Level 2 reporting triggers under EASA Part-145. Mechanical blending using flap wheels, eddy current skin thickness mapping, and structural doubler installation when material removal exceeds 10% nominal thickness."
+      },
+      {
+        number: "51-30",
+        title: "Fastener Substitution & Oversize Hole Standards",
+        pages: "321–410",
+        ata: "ATA 51-30",
+        content_preview: "Airbus titanium Hi-Lok, Hi-Lite, and blind fastener installation standards. 1/64-inch and 1/32-inch oversize fastener allowances, interference fit reaming tolerances, and cold hole expansion (Cx) procedures."
+      },
+      {
+        number: "51-40",
+        title: "Composite & Sandwich Structure Repair",
+        pages: "411–500",
+        ata: "ATA 51-40",
+        content_preview: "Carbon Fiber Reinforced Polymer (CFRP) inspection via ultrasonic phased array and tap test. Honeycomb core moisture evacuation, potting compound injections, and co-cured prepreg carbon repair patches."
+      },
+      {
+        number: "51-50",
+        title: "External Reinforcing Doubler Patch Installation",
+        pages: "501–620",
+        ata: "ATA 51-50",
+        content_preview: "Standard repair patterns for single and multi-bay skin cracks. Rivet row spacing, shear load transfer calculations, 2024-T3 clad aluminum doubler heat-treatment temper, and BMS 5-95 faying surface sealant application."
+      },
+      {
+        number: "51-70",
+        title: "Aerodynamic Surface Sealant & Finish",
+        pages: "621–784",
+        ata: "ATA 51-70",
+        content_preview: "Interchangeable polyurethane paint touch-up specs, aerodynamic smooth-fill tolerances (< 0.1mm forward facing step), lightning strike mesh restoration, and antistatic conductive coating application."
+      }
+    ]
+  },
+  {
+    id: "boeing-srm-737",
+    title: "Boeing 737 SRM Reference Guide",
+    full_title: "Boeing 737 Next-Generation Structural Repair Manual (SRM) Quick Reference Guide",
+    authority: "The Boeing Company / FAA Order 8110.42",
+    category: "Structural Engineering Guide",
+    pages: 520,
+    effective_date: "November 2020",
+    filename: "B737_SRM_Reference.pdf",
+    description: "Quick reference tables detailing fuselage pressurized skin allowable damage limits, crack stop-drilling procedures, and external fastener pitch calculations.",
+    chapters: [
+      {
+        number: "51-00",
+        title: "Allowable Damage Limits (ADL) Definitions",
+        pages: "1–80",
+        ata: "ATA 51-00",
+        content_preview: "Criteria distinguishing Negligible Damage (Category A - blend and monitor), Repairable Damage by SRM (Category B - standard patch), and Damage Requiring OEM Engineering Authorization (Category C)."
+      },
+      {
+        number: "51-10",
+        title: "Dent Assessment in Pressurized vs Non-Pressurized Zones",
+        pages: "81–190",
+        ata: "ATA 51-10",
+        featured: true,
+        content_preview: "Fuselage crown and keel dent inspection. Permissible depth: width ratio criteria. Allowable depth limit for smooth skin dent without cracked primer: 0.030 inch (0.76mm). Creased dent repair with external scalloped doubler."
+      },
+      {
+        number: "51-20",
+        title: "Stop-Drilling Standards & Hole Reaming",
+        pages: "191–320",
+        ata: "ATA 51-20",
+        content_preview: "Emergency crack termination hole drilling for non-pressurized structures. Reaming hole walls to 0.001 inch surface finish, optical 20x micro-bore scoping for residual radial cracks, and hole plugging with MS20470AD rivets."
+      },
+      {
+        number: "51-40",
+        title: "External Doubler Sizing (4D Pitch, 2D Edge Distance)",
+        pages: "321–520",
+        ata: "ATA 51-40",
+        featured: true,
+        content_preview: "Detailed engineering formulas for doubler skin gauge selection: t_doubler >= 1.25 * t_skin. Fastener shear line calculations, minimum edge distance e = 2.0 * d_shank, minimum rivet spacing p = 4.0 to 5.0 * d_shank, and edge chamfering 45 deg."
+      }
+    ]
+  }
+];
 
 const DEMO_REASONING: ReasoningResult = {
   defect_type: 'crack',
@@ -520,6 +797,22 @@ export const api = {
     } catch {
       return { status: 'offline', message: 'Offline or failed to trigger sync' };
     }
+  },
+
+  getManuals: async (): Promise<ManualItem[]> => {
+    if (isDemoMode()) return DEMO_MANUALS;
+    try {
+      const response = await fetchWithTimeout(`${getApiBaseUrl()}/manuals`);
+      if (!response.ok) throw new Error('Failed to fetch manuals');
+      return await response.json();
+    } catch (err) {
+      console.warn('[API] Backend unreachable or failed to fetch manuals, falling back to offline library:', err);
+      return DEMO_MANUALS;
+    }
+  },
+
+  getManualDownloadUrl: (manualId: string) => {
+    return `${getApiBaseUrl()}/manuals/${manualId}/download`;
   },
 
   get: async (endpoint: string, options: any = {}) => {

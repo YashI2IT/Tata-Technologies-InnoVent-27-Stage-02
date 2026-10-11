@@ -547,6 +547,48 @@ def create_app(config_name=None):
         except Exception:
             return jsonify({'message': 'Digital Twin Page', 'status': 'available'})
 
+    @app.route('/manuals', methods=['GET'])
+    def list_manuals():
+        """Returns the full catalog of aircraft technical manuals, chapters, and sections."""
+        try:
+            from backend.agents.rag_agent import RAGAgent
+            manuals_list = RAGAgent.get_manuals_library()
+            return jsonify(manuals_list), 200
+        except Exception as e:
+            return jsonify({'error': 'MANUALS_FETCH_ERROR', 'message': str(e)}), 500
+
+    @app.route('/manuals/<manual_id>', methods=['GET'])
+    def get_manual_detail(manual_id):
+        """Returns detailed structure and chapters for a specific manual."""
+        try:
+            from backend.agents.rag_agent import RAGAgent
+            manuals_list = RAGAgent.get_manuals_library()
+            for m in manuals_list:
+                if m['id'] == manual_id:
+                    return jsonify(m), 200
+            return jsonify({'error': 'NOT_FOUND', 'message': f'Manual {manual_id} not found'}), 404
+        except Exception as e:
+            return jsonify({'error': 'MANUAL_FETCH_ERROR', 'message': str(e)}), 500
+
+    @app.route('/manuals/<manual_id>/download', methods=['GET'])
+    def download_manual(manual_id):
+        """Serves the PDF file for a manual if available on disk."""
+        try:
+            from backend.agents.rag_agent import RAGAgent
+            manuals_list = RAGAgent.get_manuals_library()
+            manual = next((m for m in manuals_list if m['id'] == manual_id), None)
+            if not manual:
+                return jsonify({'error': 'NOT_FOUND', 'message': f'Manual {manual_id} not found'}), 404
+            
+            manuals_dir = str(app.config.get('MANUALS_DIR', 'manuals'))
+            filename = manual.get('filename')
+            pdf_path = os.path.join(manuals_dir, filename)
+            if os.path.exists(pdf_path):
+                return send_from_directory(manuals_dir, filename, as_attachment=True)
+            return jsonify({'error': 'FILE_UNAVAILABLE', 'message': 'PDF manual is in offline archive'}), 404
+        except Exception as e:
+            return jsonify({'error': 'DOWNLOAD_ERROR', 'message': str(e)}), 500
+
     @app.route('/report/<int:inspection_id>')
     @login_required
     def download_report(inspection_id):
@@ -822,7 +864,7 @@ if __name__ == '__main__':
                 self.prefixes = (
                     '/api/', '/v1/', '/api_v1/',
                     '/health', '/analyze', '/history', '/notifications',
-                    '/sync', '/reports', '/uploads', '/auth', '/system', '/search', '/digital-twin'
+                    '/sync', '/reports', '/uploads', '/auth', '/system', '/search', '/digital-twin', '/manuals'
                 )
 
             async def __call__(self, scope, receive, send):

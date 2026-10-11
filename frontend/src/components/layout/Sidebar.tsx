@@ -18,6 +18,7 @@ import { TRANSITION_STANDARD } from "@/lib/motion";
 const NAV_ITEMS = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard },
   { name: "Inspection", path: "/inspection", icon: Search },
+  { name: "Technical Manuals", path: "/manuals", icon: BookOpen },
   { name: "Digital Twin", path: "/digital-twin", icon: Box },
   { name: "Reports", path: "/reports", icon: FileText },
   { name: "Analytics", path: "/analytics", icon: BarChart3 },
